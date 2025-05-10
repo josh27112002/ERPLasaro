@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Usuarios | ERP</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 30px;
+      background-color: white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .left-text { font-size: 16px; }
+    .logo { height: 80px; }
+    .logout {
+      text-decoration: none;
+      color: #007bff;
+      font-size: 16px;
+    }
+    .logout:hover { text-decoration: underline; }
+    .content {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+    .sidebar {
+      width: 220px;
+      background-color: #2c3e50;
+      color: white;
+      height: 100%;
+      padding: 20px;
+    }
+    .sidebar h2 { font-size: 20px; margin-bottom: 20px; text-align: center; }
+    .sidebar ul { list-style: none; padding: 0; }
+    .sidebar ul li { margin: 15px 0; }
+    .sidebar ul li a {
+      color: white;
+      text-decoration: none;
+      display: block;
+      padding: 8px;
+      border-radius: 4px;
+    }
+    .sidebar ul li a:hover { background-color: #34495e; }
+    .main {
+      flex: 1;
+      background-color: #ecf0f1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    .card {
+      background-color: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
+    }
+    input, select {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+    button {
+      padding: 12px 20px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover { background-color: #0056b3; }
+    p#mensaje {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    table {
+      width: 100%;
+      margin-top: 20px;
+      border-collapse: collapse;
+    }
+    table th, table td {
+      padding: 12px;
+      text-align: left;
+      border: 1px solid #ddd;
+    }
+    table th {
+      background-color: #007bff;
+      color: white;
+    }
+    table tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+    .icon {
+      cursor: pointer;
+      margin-right: 8px;
+      color: #007bff;
+    }
+    .icon:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-column">
+      <span class="left-text" id="usuario-logueado">Bienvenido</span>
+    </div>
+    <div class="header-column center-column">
+      <img src="logo3-removebg-preview.png" alt="Logo del ERP" class="logo" />
+    </div>
+    <div class="header-column right-column">
+      <a href="#" class="logout" onclick="cerrarSesion()">Cerrar sesión</a>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="sidebar">
+      <h2>Mi ERP</h2>
+      <ul>
+        <li><a href="dashboard.html" data-rol="todos">Inicio</a></li>
+        <li><a href="ventas.html" data-rol="Administrador,Vendedor,Bodega">Ventas</a></li>
+        <li><a href="compras.html" data-rol="Administrador,Bodega">Compras</a></li>
+        <li><a href="inventario.html" data-rol="Administrador,Bodega">Inventario</a></li>
+        <li><a href="reportes.html" data-rol="Administrador,Bodega">Reportes</a></li>
+        <li><a href="usuarios.html" data-rol="Administrador">Usuarios</a></li>
+      </ul>
+    </div>
+
+    <div class="main">
+      <h1>Gestión de Usuarios</h1>
+
+      <div class="card">
+        <h2>Registrar / Editar Usuario</h2>
+        <input id="nombre" type="text" placeholder="Nombre completo" required />
+        <input id="email" type="email" placeholder="Correo electrónico" required />
+        <input id="telefono" type="text" placeholder="Teléfono" required />
+        <input id="password" type="password" placeholder="Contraseña" />
+        <select id="rol" required>
+          <option value="">Selecciona un rol</option>
+          <option value="Administrador">Administrador</option>
+          <option value="Bodega">Bodega</option>
+          <option value="Vendedor">Vendedor</option>
+        </select>
+        <select id="estado" required>
+          <option value="">Estado</option>
+          <option value="activo">Activo</option>
+          <option value="inactivo">Inactivo</option>
+        </select>
+        <button id="btnRegistrar">Guardar Usuario</button>
+        <p id="mensaje"></p>
+      </div>
+
+      <h2>Lista de Usuarios</h2>
+      <div class="card">
+        <table id="tablaUsuarios">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Correo</th>
+              <th>Teléfono</th>
+              <th>Rol</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import {
+      auth,
+      db,
+      createUserWithEmailAndPassword,
+      setDoc,
+      getDocs,
+      deleteDoc,
+      collection,
+      doc,
+      getDoc
+    } from './firebase.js';
+
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
+
+    const mensaje = document.getElementById("mensaje");
+    const tbody = document.getElementById("tablaUsuarios").getElementsByTagName("tbody")[0];
+    const usuarioLogueadoSpan = document.getElementById("usuario-logueado");
+    let idEditando = null;
+
+    function mostrarOpcionesPermitidas(rolUsuario) {
+      const links = document.querySelectorAll('.sidebar a');
+      links.forEach(link => {
+        const rolesPermitidos = link.getAttribute('data-rol');
+        if (rolesPermitidos !== "todos" && !rolesPermitidos.includes(rolUsuario)) {
+          link.parentElement.style.display = "none";
+        }
+      });
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) return window.location.href = "index.html";
+      const ref = doc(db, "usuarios", user.uid);
+      const snap = await getDoc(ref);
+      if (!snap.exists()) return window.location.href = "index.html";
+      const data = snap.data();
+      usuarioLogueadoSpan.textContent = `Bienvenido, ${data.nombre || "Usuario"}`;
+      mostrarOpcionesPermitidas(data.rol || "");
+      if ((data.rol || "").trim() !== "Administrador") return window.location.href = "dashboard.html";
+      obtenerUsuarios();
+    });
+
+    window.cerrarSesion = function () {
+      localStorage.clear();
+      auth.signOut().then(() => window.location.href = "index.html");
+    }
+
+    async function obtenerUsuarios() {
+      const snapshot = await getDocs(collection(db, "usuarios"));
+      tbody.innerHTML = '';
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const row = tbody.insertRow();
+        row.innerHTML = `
+          <td>${data.nombre}</td>
+          <td>${data.correo}</td>
+          <td>${data.telefono}</td>
+          <td>${data.rol}</td>
+          <td>${data.estado}</td>
+          <td>
+            <span class="icon" onclick="editarUsuario('${docSnap.id}')">✏️</span>
+            <span class="icon" onclick="eliminarUsuario('${docSnap.id}')">🗑️</span>
+          </td>`;
+      });
+    }
+
+    window.eliminarUsuario = async function(uid) {
+      if (confirm("¿Seguro que deseas eliminar este usuario?")) {
+        await deleteDoc(doc(db, "usuarios", uid));
+        obtenerUsuarios();
+      }
+    }
+
+    window.editarUsuario = async function(uid) {
+      const snap = await getDoc(doc(db, "usuarios", uid));
+      if (!snap.exists()) return;
+      const data = snap.data();
+      document.getElementById("nombre").value = data.nombre;
+      document.getElementById("email").value = data.correo;
+      document.getElementById("telefono").value = data.telefono;
+      document.getElementById("rol").value = data.rol;
+      document.getElementById("estado").value = data.estado;
+      idEditando = uid;
+    }
+
+    document.getElementById("btnRegistrar").addEventListener("click", async () => {
+      const nombre = document.getElementById("nombre").value.trim();
+      const correo = document.getElementById("email").value.trim();
+      const telefono = document.getElementById("telefono").value.trim();
+      const password = document.getElementById("password").value;
+      const rol = document.getElementById("rol").value;
+      const estado = document.getElementById("estado").value;
+
+      if (!nombre || !correo || !telefono || (!idEditando && !password) || !rol || !estado) {
+        mensaje.textContent = "⚠️ Todos los campos son obligatorios.";
+        mensaje.style.color = "red";
+        return;
+      }
+
+      try {
+        if (idEditando) {
+          await setDoc(doc(db, "usuarios", idEditando), { nombre, correo, telefono, rol, estado });
+          mensaje.textContent = "✅ Usuario actualizado correctamente.";
+        } else {
+          const cred = await createUserWithEmailAndPassword(auth, correo, password);
+          const uid = cred.user.uid;
+          await setDoc(doc(db, "usuarios", uid), { nombre, correo, telefono, rol, estado });
+          mensaje.textContent = "✅ Usuario creado correctamente.";
+        }
+
+        mensaje.style.color = "green";
+        obtenerUsuarios();
+        idEditando = null;
+        document.getElementById("nombre").value = "";
+        document.getElementById("email").value = "";
+        document.getElementById("telefono").value = "";
+        document.getElementById("password").value = "";
+        document.getElementById("rol").value = "";
+        document.getElementById("estado").value = "";
+
+      } catch (error) {
+        console.error("Error al guardar usuario:", error);
+        mensaje.textContent = "❌ Error al guardar usuario.";
+        mensaje.style.color = "red";
+      }
+    });
+  </script>
+</body>
+</html>

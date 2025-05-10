@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reportes - ERP</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 30px;
+      background-color: white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .left-text {
+      font-size: 16px;
+    }
+
+    .logo {
+      height: 80px;
+    }
+
+    .logout {
+      text-decoration: none;
+      color: #007bff;
+      font-size: 16px;
+    }
+
+    .logout:hover {
+      text-decoration: underline;
+    }
+
+    .content {
+      display: flex;
+      flex: 1;
+      padding: 30px;
+      gap: 30px;
+    }
+
+    .sidebar {
+      width: 220px;
+      background-color: #2c3e50;
+      color: white;
+      height: 100%;
+      padding: 20px;
+    }
+
+    .sidebar h2 {
+      font-size: 20px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .sidebar ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .sidebar ul li {
+      margin: 15px 0;
+    }
+
+    .sidebar ul li a {
+      color: white;
+      text-decoration: none;
+      display: block;
+      padding: 8px;
+      border-radius: 4px;
+    }
+
+    .sidebar ul li a:hover {
+      background-color: #34495e;
+    }
+
+    .main {
+      flex: 1;
+      background-color: #ecf0f1;
+      padding: 20px;
+    }
+
+    .main h1 {
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background-color: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
+    }
+
+    input, button {
+      padding: 10px;
+      margin-bottom: 12px;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    table {
+      width: 100%;
+      margin-top: 20px;
+      border-collapse: collapse;
+    }
+
+    table th, table td {
+      padding: 12px;
+      text-align: left;
+      border: 1px solid #ddd;
+    }
+
+    table th {
+      background-color: #007bff;
+      color: white;
+    }
+
+    table tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+  </style>
+</head>
+<body>
+  <!-- Encabezado -->
+  <div class="header">
+    <div class="header-column">
+      <span class="left-text" id="usuario-logueado">Bienvenido</span>
+    </div>
+    <div class="header-column center-column">
+      <img src="logo3-removebg-preview.png" alt="Logo del ERP" class="logo" />
+    </div>
+    <div class="header-column right-column">
+      <a href="#" class="logout" onclick="cerrarSesion()">Cerrar sesión</a>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="sidebar">
+      <h2>Mi ERP</h2>
+      <ul>
+        <li><a href="dashboard.html">Inicio</a></li>
+        <li><a href="ventas.html">Ventas</a></li>
+        <li><a href="compras.html">Compras</a></li>
+        <li><a href="inventario.html">Inventario</a></li>
+        <li><a href="reportes.html">Reportes</a></li>
+        <li><a href="usuarios.html">Usuarios</a></li>
+      </ul>
+    </div>
+
+    <div class="main">
+      <h1>Generar Reportes</h1>
+      <div class="card">
+        <input type="date" id="fechaInicio" required><br>
+        <input type="date" id="fechaFin" required><br>
+        <button id="btnGenerarReporte">Generar Reporte</button>
+        <p id="mensaje"></p>
+      </div>
+
+      <h2>Reporte de Ventas</h2>
+      <table id="tablaVentas">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Cantidad</th>
+            <th>Precio (Q)</th>
+            <th>Total (Q)</th>
+            <th>Fecha</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <h2>Reporte de Compras</h2>
+      <table id="tablaCompras">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Cantidad</th>
+            <th>Precio (Q)</th>
+            <th>Total (Q)</th>
+            <th>Proveedor</th>
+            <th>Fecha</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <h2>Reporte de Inventario</h2>
+      <table id="tablaInventario">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Cantidad disponible</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+<script type="module">
+  import { db } from './firebase.js';
+  import {
+    collection, getDocs, query, where, Timestamp, getDoc, doc
+  } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
+
+  const spanUsuario = document.getElementById("usuario-logueado");
+  const auth = getAuth();
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      window.location.href = "index.html";
+      return;
+    }
+
+    const uid = user.uid;
+    const userDoc = await getDoc(doc(db, "usuarios", uid));
+    if (!userDoc.exists()) {
+      alert("⚠️ Tu perfil no está registrado.");
+      window.location.href = "index.html";
+      return;
+    }
+
+    const data = userDoc.data();
+    const nombre = data.nombre || "Usuario";
+    const rol = (data.rol || "Desconocido").trim();
+
+    spanUsuario.textContent = `Bienvenido, ${nombre}`;
+
+    const enlaces = document.querySelectorAll(".sidebar a");
+    enlaces.forEach(link => {
+      const ruta = link.getAttribute("href");
+      if (ruta === "usuarios.html" && rol !== "Administrador") link.parentElement.style.display = "none";
+      if (["compras.html", "inventario.html", "reportes.html"].includes(ruta) && !["Administrador", "Bodega"].includes(rol)) link.parentElement.style.display = "none";
+      if (ruta === "ventas.html" && !["Administrador", "Vendedor", "Bodega"].includes(rol)) link.parentElement.style.display = "none";
+    });
+
+    const permitido = ["Administrador", "Bodega"];
+    if (!permitido.includes(rol)) {
+      alert("⚠️ No tienes permisos para acceder a esta página.");
+      window.location.href = "dashboard.html";
+      return;
+    }
+  });
+
+  window.cerrarSesion = function () {
+    localStorage.removeItem("usuario");
+    window.location.href = "index.html";
+  }
+
+  document.getElementById('btnGenerarReporte').addEventListener('click', async () => {
+    const fechaInicio = document.getElementById('fechaInicio').value;
+    const fechaFin = document.getElementById('fechaFin').value;
+
+    if (!fechaInicio || !fechaFin) {
+      document.getElementById('mensaje').textContent = "⚠️ Ambas fechas son obligatorias.";
+      return;
+    }
+
+    const fechaInicioTimestamp = Timestamp.fromDate(new Date(fechaInicio));
+    const fechaFinTimestamp = Timestamp.fromDate(new Date(fechaFin + 'T23:59:59'));
+
+    try {
+      const ventasRef = collection(db, "ventas");
+      const ventasQuery = query(ventasRef, where("fecha", ">=", fechaInicioTimestamp), where("fecha", "<=", fechaFinTimestamp));
+      const ventasSnapshot = await getDocs(ventasQuery);
+      const ventas = ventasSnapshot.docs.map(doc => doc.data());
+
+      const comprasRef = collection(db, "compras");
+      const comprasSnapshot = await getDocs(comprasRef);
+      const compras = comprasSnapshot.docs.map(doc => doc.data());
+
+      const inventarioRef = collection(db, "inventario");
+      const inventarioSnapshot = await getDocs(inventarioRef);
+      const inventario = inventarioSnapshot.docs.map(doc => doc.data());
+
+      mostrarVentas(ventas);
+      mostrarCompras(compras);
+      mostrarInventario(inventario);
+
+      if (ventas.length === 0 && compras.length === 0) {
+        document.getElementById("mensaje").textContent = "⚠️ No se encontraron registros en ese rango de fechas.";
+      } else {
+        document.getElementById("mensaje").textContent = "";
+      }
+
+    } catch (error) {
+      document.getElementById('mensaje').textContent = "❌ Error al generar los reportes.";
+      console.error("Error al obtener reportes:", error);
+    }
+  });
+
+  function mostrarVentas(ventas) {
+    const tabla = document.getElementById("tablaVentas").getElementsByTagName('tbody')[0];
+    tabla.innerHTML = '';
+    ventas.forEach(venta => {
+      const row = tabla.insertRow();
+      row.innerHTML = `
+        <td>${venta.producto}</td>
+        <td>${venta.cantidad}</td>
+        <td>Q${venta.precio}</td>
+        <td>Q${venta.total}</td>
+        <td>${venta.fecha?.seconds ? new Date(venta.fecha.seconds * 1000).toLocaleString() : 'Sin fecha'}</td>
+      `;
+    });
+  }
+
+  function mostrarCompras(compras) {
+    const tabla = document.getElementById("tablaCompras").getElementsByTagName('tbody')[0];
+    tabla.innerHTML = '';
+    compras.forEach(compra => {
+      const row = tabla.insertRow();
+      row.innerHTML = `
+        <td>${compra.nombre}</td>
+        <td>${compra.cantidad}</td>
+        <td>Q${compra.precio}</td>
+        <td>Q${(compra.precio * compra.cantidad).toFixed(2)}</td>
+        <td>${compra.proveedor || "Sin proveedor"}</td>
+        <td>${compra.fecha || 'Sin fecha'}</td>
+      `;
+    });
+  }
+
+  function mostrarInventario(inventario) {
+    const tabla = document.getElementById("tablaInventario").getElementsByTagName('tbody')[0];
+    tabla.innerHTML = '';
+    inventario.forEach(item => {
+      const row = tabla.insertRow();
+      row.innerHTML = `
+        <td>${item.nombre}</td>
+        <td>${item.cantidad}</td>
+      `;
+    });
+  }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login | ERP</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #007bff, #0056b3);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .login-container {
+      background-color: #ffffff;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+      width: 100%;
+      max-width: 400px;
+    }
+    .logo {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .logo img {
+      max-width: 150px;
+      height: auto;
+    }
+    h2 {
+      text-align: center;
+      color: #333333;
+      margin-bottom: 24px;
+    }
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 20px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .recover {
+      text-align: center;
+      margin-top: 16px;
+      font-size: 14px;
+    }
+    .recover a {
+      color: #007bff;
+      text-decoration: none;
+    }
+    .error {
+      color: red;
+      font-size: 14px;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="logo">
+      <img src="logo3-removebg-preview.png" alt="Logo ERP" />
+    </div>
+
+    <h2>Iniciar sesión en el ERP</h2>
+    <form id="login-form">
+      <input id="email" type="email" placeholder="Correo electrónico" required />
+      <input id="password" type="password" placeholder="Contraseña" required />
+      <div class="error" id="error-msg"></div>
+      <button type="submit">Iniciar sesión</button>
+    </form>
+    <div class="recover">
+      <p>¿Olvidaste tu contraseña? <a href="#">Recupérala aquí</a></p>
+    </div>
+  </div>
+
+  <script type="module">
+    import {
+      auth,
+      db,
+      signInWithEmailAndPassword,
+      getDoc,
+      doc
+    } from './firebase.js';
+
+    const loginForm = document.getElementById('login-form');
+    const errorMsg = document.getElementById('error-msg');
+
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorMsg.textContent = '';
+
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const uid = userCredential.user.uid;
+
+        const userDoc = await getDoc(doc(db, "usuarios", uid));
+        if (!userDoc.exists()) {
+          errorMsg.textContent = "⚠️ Usuario sin perfil en el sistema.";
+          return;
+        }
+
+        const userData = userDoc.data();
+        if (userData.estado !== "activo") {
+          errorMsg.textContent = "⚠️ Tu cuenta está inactiva. Contacta al administrador.";
+          return;
+        }
+
+        // Guardar datos en localStorage
+        localStorage.setItem("usuario", userData.nombre);
+        localStorage.setItem("rol", userData.rol);
+        localStorage.setItem("uid", uid);
+
+        // Redireccionar al dashboard
+        window.location.href = "dashboard.html";
+
+      } catch (error) {
+        console.error("Error al iniciar sesión:", error);
+        if (error.code === 'auth/user-not-found') {
+          errorMsg.textContent = "❌ Usuario no encontrado.";
+        } else if (error.code === 'auth/wrong-password') {
+          errorMsg.textContent = "❌ Contraseña incorrecta.";
+        } else {
+          errorMsg.textContent = "❌ Error al iniciar sesión.";
+        }
+      }
+    });
+  </script>
+</body>
+</html>

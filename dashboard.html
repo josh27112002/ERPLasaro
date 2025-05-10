@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard ERP</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script type="module" src="firebase.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 30px;
+      background-color: white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .left-text { font-size: 16px; }
+    .logo { height: 80px; }
+    .logout {
+      text-decoration: none;
+      color: #007bff;
+      font-size: 16px;
+    }
+    .logout:hover { text-decoration: underline; }
+    .content {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+    .sidebar {
+      width: 220px;
+      background-color: #2c3e50;
+      color: white;
+      height: 100%;
+      padding: 20px;
+    }
+    .sidebar h2 { font-size: 20px; margin-bottom: 20px; text-align: center; }
+    .sidebar ul { list-style: none; padding: 0; }
+    .sidebar ul li { margin: 15px 0; }
+    .sidebar ul li a {
+      color: white;
+      text-decoration: none;
+      display: block;
+      padding: 8px;
+      border-radius: 4px;
+    }
+    .sidebar ul li a:hover { background-color: #34495e; }
+    .main {
+      flex: 1;
+      background-color: #ecf0f1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    .card {
+      background-color: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
+    }
+    .chart-container {
+      width: 100%;
+      height: 400px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 12px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+    th {
+      background-color: #007bff;
+      color: white;
+    }
+    .products-list ul {
+      padding-left: 20px;
+    }
+    .products-list li {
+      margin-bottom: 8px;
+    }
+    #usuario-logueado {
+      font-weight: bold;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-column"><span class="left-text" id="usuario-logueado">Bienvenido</span></div>
+    <div class="header-column center-column">
+      <img src="logo3-removebg-preview.png" alt="Logo del ERP" class="logo" />
+    </div>
+    <div class="header-column right-column">
+      <a href="#" class="logout" onclick="cerrarSesion()">Cerrar sesión</a>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="sidebar">
+      <h2>Mi ERP</h2>
+      <ul>
+        <li><a href="dashboard.html" data-rol="todos">Inicio</a></li>
+        <li><a href="ventas.html" data-rol="Administrador,Vendedor,Bodega">Ventas</a></li>
+        <li><a href="compras.html" data-rol="Administrador,Bodega">Compras</a></li>
+        <li><a href="inventario.html" data-rol="Administrador,Bodega">Inventario</a></li>
+        <li><a href="reportes.html" data-rol="Administrador,Bodega">Reportes</a></li>
+        <li><a href="usuarios.html" data-rol="Administrador">Usuarios</a></li>
+      </ul>
+    </div>
+
+    <div class="main">
+      <h1>Pantalla principal</h1>
+
+      <div class="card">
+        <h2>Gráfica de Ventas</h2>
+        <div class="chart-container">
+          <canvas id="ventasChart"></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Trabajadores</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Correo</th>
+              <th>Rol</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="card products-list">
+        <h2>Productos con Pocas Existencias</h2>
+        <ul></ul>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { db } from './firebase.js';
+    import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+  
+    // Verificar sesión
+    const usuario = localStorage.getItem("usuario");
+    const rol = (localStorage.getItem("rol") || "").trim();
+  
+    if (!usuario || !rol) {
+      window.location.href = "index.html";
+    }
+  
+    // Mostrar nombre
+    const nombreCapitalizado = usuario.charAt(0).toUpperCase() + usuario.slice(1);
+    document.getElementById("usuario-logueado").textContent = `Bienvenido, ${nombreCapitalizado}`;
+  
+    // Función para mostrar menú por rol
+    function mostrarOpcionesPermitidas(rolUsuario) {
+      const links = document.querySelectorAll('.sidebar a');
+      links.forEach(link => {
+        const rolesPermitidos = link.getAttribute('data-rol');
+        if (rolesPermitidos !== "todos" && !rolesPermitidos.includes(rolUsuario)) {
+          link.parentElement.style.display = "none";
+        }
+      });
+    }
+  
+    // Aplicar restricción de menú
+    mostrarOpcionesPermitidas(rol);
+  
+    // Cerrar sesión
+    window.cerrarSesion = function () {
+      localStorage.clear();
+      window.location.href = "index.html";
+    };
+  
+    // Cargar gráfica de ventas
+    const ventasCollection = collection(db, "ventas");
+    getDocs(ventasCollection).then((querySnapshot) => {
+      const ventasPorMes = {};
+  
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        const fecha = data.fecha.toDate();
+        const mes = fecha.getMonth();
+        const anio = fecha.getFullYear();
+        const clave = `${anio}-${mes + 1}`.padStart(7, '0');
+        const totalVenta = parseFloat(data.total) || 0;
+  
+        if (!ventasPorMes[clave]) ventasPorMes[clave] = 0;
+        ventasPorMes[clave] += totalVenta;
+      });
+  
+      const clavesOrdenadas = Object.keys(ventasPorMes).sort();
+      const etiquetas = clavesOrdenadas.map(clave => {
+        const [anio, mes] = clave.split('-');
+        return new Date(anio, mes - 1).toLocaleString('es-ES', { month: 'short', year: 'numeric' });
+      });
+  
+      const totales = clavesOrdenadas.map(clave => ventasPorMes[clave]);
+  
+      new Chart(document.getElementById('ventasChart'), {
+        type: 'bar',
+        data: {
+          labels: etiquetas,
+          datasets: [{
+            label: 'Total de Ventas',
+            data: totales,
+            backgroundColor: 'rgba(54, 162, 235, 0.5)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: context => `Q ${context.raw.toLocaleString('es-GT', { minimumFractionDigits: 2 })}`
+              }
+            }
+          },
+          scales: {
+            x: { title: { display: true, text: 'Mes' } },
+            y: { title: { display: true, text: 'Ventas (Q)' }, beginAtZero: true }
+          }
+        }
+      });
+    });
+  
+    // Cargar trabajadores
+    getDocs(collection(db, "usuarios")).then((querySnapshot) => {
+      const tbody = document.querySelector('table tbody');
+      tbody.innerHTML = '';
+      querySnapshot.forEach((doc) => {
+        const t = doc.data();
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${t.nombre || 'No disponible'}</td>
+          <td>${t.correo || 'No disponible'}</td>
+          <td>${t.rol || 'No disponible'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    });
+  
+    // Productos con poca existencia
+    getDocs(collection(db, "inventario")).then((querySnapshot) => {
+      const lista = document.querySelector('.products-list ul');
+      lista.innerHTML = '';
+      querySnapshot.forEach((doc) => {
+        const p = doc.data();
+        if (p.cantidad <= p.cantidadAlerta) {
+          const li = document.createElement('li');
+          li.textContent = `${p.nombre} - Existencias: ${p.cantidad}`;
+          lista.appendChild(li);
+        }
+      });
+    });
+  </script>
+  
+</body>
+</html>

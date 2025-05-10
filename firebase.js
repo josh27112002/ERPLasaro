@@ -20,12 +20,13 @@ import {
 
 // Configuración
 const firebaseConfig = {
-  apiKey: "AIzaSyD1vKs3CSDUbvU3XaFHzX_hmdq05ga2TUE",
-  authDomain: "erpj-3f6b7.firebaseapp.com",
-  projectId: "erpj-3f6b7",
-  storageBucket: "erpj-3f6b7.appspot.com",
-  messagingSenderId: "277321931724",
-  appId: "1:277321931724:web:52b2aa01f80ac816109b69"
+  apiKey: "AIzaSyD0P6AS8Ej9mnUo3EUOHmzTtMrnJN7nA_E",
+  authDomain: "erpy-11103.firebaseapp.com",
+  projectId: "erpy-11103",
+  storageBucket: "erpy-11103.firebasestorage.app",
+  messagingSenderId: "699852482039",
+  appId: "1:699852482039:web:8b225ced1799aa2c4d3af2",
+  measurementId: "G-1J3MEXT9JN"
 };
 
 const app = initializeApp(firebaseConfig);

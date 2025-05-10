@@ -6,98 +6,12 @@
   <title>Dashboard ERP</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script type="module" src="firebase.js"></script>
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-    }
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 30px;
-      background-color: white;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .left-text { font-size: 16px; }
-    .logo { height: 80px; }
-    .logout {
-      text-decoration: none;
-      color: #007bff;
-      font-size: 16px;
-    }
-    .logout:hover { text-decoration: underline; }
-    .content {
-      display: flex;
-      flex: 1;
-      overflow: hidden;
-    }
-    .sidebar {
-      width: 220px;
-      background-color: #2c3e50;
-      color: white;
-      height: 100%;
-      padding: 20px;
-    }
-    .sidebar h2 { font-size: 20px; margin-bottom: 20px; text-align: center; }
-    .sidebar ul { list-style: none; padding: 0; }
-    .sidebar ul li { margin: 15px 0; }
-    .sidebar ul li a {
-      color: white;
-      text-decoration: none;
-      display: block;
-      padding: 8px;
-      border-radius: 4px;
-    }
-    .sidebar ul li a:hover { background-color: #34495e; }
-    .main {
-      flex: 1;
-      background-color: #ecf0f1;
-      padding: 20px;
-      overflow-y: auto;
-    }
-    .card {
-      background-color: white;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      margin-bottom: 30px;
-    }
-    .chart-container {
-      width: 100%;
-      height: 400px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    th, td {
-      padding: 12px;
-      border: 1px solid #ddd;
-      text-align: left;
-    }
-    th {
-      background-color: #007bff;
-      color: white;
-    }
-    .products-list ul {
-      padding-left: 20px;
-    }
-    .products-list li {
-      margin-bottom: 8px;
-    }
-    #usuario-logueado {
-      font-weight: bold;
-      font-size: 16px;
-    }
-  </style>
+  <link rel="stylesheet" href="/static/lateral.css">
+
 </head>
 <body>
   <div class="header">
-    <div class="header-column"><span class="left-text" id="usuario-logueado">Bienvenido</span></div>
+    <div class="header-column"><span id="usuario-logueado">Bienvenido</span></div>
     <div class="header-column center-column">
       <img src="logo3-removebg-preview.png" alt="Logo del ERP" class="logo" />
     </div>
@@ -111,7 +25,7 @@
       <h2>Mi ERP</h2>
       <ul>
         <li><a href="dashboard.html" data-rol="todos">Inicio</a></li>
-        <li><a href="ventas.html" data-rol="Administrador,Vendedor,Bodega">Ventas</a></li>
+        <li><a href="caja.html" data-rol="Administrador,Vendedor,Bodega">Ventas</a></li>
         <li><a href="compras.html" data-rol="Administrador,Bodega">Compras</a></li>
         <li><a href="inventario.html" data-rol="Administrador,Bodega">Inventario</a></li>
         <li><a href="reportes.html" data-rol="Administrador,Bodega">Reportes</a></li>
@@ -270,6 +184,17 @@
         }
       });
     });
+
+    // Marcar la opción activa en el sidebar
+    const links = document.querySelectorAll('.sidebar a');
+    const currentPage = window.location.pathname.split("/").pop(); // por ejemplo: "usuarios.html"
+
+    links.forEach(link => {
+    if (link.getAttribute("href") === currentPage) {
+      link.classList.add("active");
+      }
+    });
+
   </script>
   
 </body>

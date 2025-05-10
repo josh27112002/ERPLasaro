@@ -1,0 +1,225 @@
+/* ===== RESET & BASE =====
+   Estilos generales que aplican a toda la página para estructura base y fuente. */
+   body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    height: 100vh; /* asegura que el layout ocupe toda la pantalla vertical */
+  }
+  
+  /* ===== HEADER =====
+     Define el estilo de la cabecera que aparece en la parte superior de cada página. */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 30px;
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* sombra sutil para separación visual */
+  }
+  .left-text, #usuario-logueado {
+    font-size: 16px;
+    font-weight: bold; /* resalta el texto de bienvenida */
+  }
+  .logo {
+    height: 80px; /* controla el tamaño del logo */
+  }
+  .logout {
+    text-decoration: none;
+    padding: 12px 20px;
+    background-color: #34495e;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+  }
+  .logout:hover {
+    background-color: #0056b3; /* cambio de color al pasar el mouse */
+  }
+  
+  /* ===== LAYOUT GENERAL =====
+     Controla la estructura horizontal entre el menú lateral y el contenido principal. */
+  .content {
+    display: flex;
+    flex: 1;
+    margin: 0;
+    padding: 0; /* elimina separación lateral */
+    overflow: hidden;
+  }
+  
+  /* ===== SIDEBAR =====
+     Estilo de la barra lateral izquierda (menú). */
+  .sidebar {
+    width: 220px;
+    background-color: #2c3e50;
+    color: white;
+    padding: 20px 0; /* solo vertical para evitar separación horizontal */
+    height: calc(100vh - 100px); /* resta la altura aproximada del header */
+    position: relative;
+  }
+  .sidebar h2 {
+    font-size: 20px;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .sidebar ul {
+    list-style: none;
+    padding: 0;
+  }
+  .sidebar ul li {
+    margin: 15px 0;
+  }
+  .sidebar ul li a {
+    color: white;
+    text-decoration: none;
+    display: block;
+    padding: 8px;
+    border-radius: 4px;
+  }
+  .sidebar ul li a:hover {
+    background-color: #34495e;
+  }
+  .sidebar ul li a.active {
+    background-color: #5d6d83;
+    font-weight: bold; /* resalta la página actual */
+  }
+  
+  /* ===== MAIN CONTENT =====
+     Contenedor principal donde va el contenido específico de cada página. */
+  .main {
+    flex: 1;
+    background-color: #ecf0f1;
+    padding: 30px; /* espacio interior agradable */
+    overflow-y: auto; /* permite scroll si hay mucho contenido */
+  }
+  .main h1, .main h2 {
+    font-size: 24px;
+    margin-bottom: 20px;
+  }
+  
+  /* ===== CARD COMPONENTS =====
+     Caja blanca con sombra utilizada para formularios, gráficas, tablas, etc. */
+  .card {
+    background-color: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    margin-bottom: 30px;
+  }
+  
+  /* ===== FORM ELEMENTS =====
+     Aplica a formularios de todas las secciones, como inventario, usuarios, ventas, etc. */
+  input, select {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 16px;
+  }
+  
+  /* ===== BOTONES =====
+     Estilo de botones usados en todas las páginas (guardar, registrar, etc).
+     Si modificas aquí, afecta botones como los de inventario. */
+  button {
+    padding: 12px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+  }
+  button:hover {
+    background-color: #0056b3;
+  }
+  
+  /* ===== MENSAJES =====
+     Mensajes de confirmación o error para formularios. */
+  p#mensaje, p#mensajeCompra {
+    margin-top: 10px;
+    font-weight: bold;
+  }
+  
+  /* ===== ICONOS DE ACCIONES =====
+     Íconos usados para editar o eliminar usuarios/productos. */
+  .icon {
+    cursor: pointer;
+    margin-right: 8px;
+    color: #007bff;
+  }
+  .icon:hover {
+    text-decoration: underline;
+  }
+  
+  /* ===== TABLAS =====
+     Estilo común para tablas de usuarios, inventario, ventas, etc. */
+  table {
+    width: 100%;
+    margin-top: 20px;
+    border-collapse: collapse;
+  }
+  table th, table td {
+    padding: 12px;
+    text-align: left;
+    border: 1px solid #ddd;
+  }
+  table th {
+    background-color: #007bff;
+    color: white;
+  }
+  table tr:nth-child(even) {
+    background-color: #f2f2f2;
+  }
+  
+  /* ===== ESTADO DE INVENTARIO =====
+     Colores que indican nivel de stock visualmente. */
+  .alerta-stock {
+    background-color: #fff3cd;
+    color: #856404;
+  }
+  .alerta-minima {
+    background-color: #f8d7da;
+  }
+  .mayor-stock {
+    background-color: #d4edda;
+  }
+  
+  /* ===== SUGERENCIAS EN VENTAS =====
+     Lista desplegable de autocompletado al buscar productos. */
+  .autocomplete-suggestions {
+    border: 1px solid #ccc;
+    background-color: white;
+    max-height: 200px;
+    overflow-y: auto;
+    position: absolute;
+    width: calc(100% - 22px);
+    z-index: 10;
+    border-radius: 6px;
+    box-shadow: 0 0 8px rgba(0,0,0,0.2);
+  }
+  .autocomplete-suggestions div {
+    padding: 8px;
+    cursor: pointer;
+  }
+  .autocomplete-suggestions div:hover {
+    background-color: #f0f0f0;
+  }
+  
+  /* ===== TOTALES EN VENTAS =====
+     Estilo para mostrar totales y descuentos en la sección de ventas. */
+  .total {
+    font-size: 18px;
+    font-weight: bold;
+  }
+  .total-discount {
+    margin-top: 12px;
+    font-size: 16px;
+    color: red;
+  }
+  .stock-bajo {
+    background-color: #ffe5e5 !important;
+  }
+  

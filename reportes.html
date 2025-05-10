@@ -4,148 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Reportes - ERP</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-    }
-
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 30px;
-      background-color: white;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-
-    .left-text {
-      font-size: 16px;
-    }
-
-    .logo {
-      height: 80px;
-    }
-
-    .logout {
-      text-decoration: none;
-      color: #007bff;
-      font-size: 16px;
-    }
-
-    .logout:hover {
-      text-decoration: underline;
-    }
-
-    .content {
-      display: flex;
-      flex: 1;
-      padding: 30px;
-      gap: 30px;
-    }
-
-    .sidebar {
-      width: 220px;
-      background-color: #2c3e50;
-      color: white;
-      height: 100%;
-      padding: 20px;
-    }
-
-    .sidebar h2 {
-      font-size: 20px;
-      margin-bottom: 20px;
-      text-align: center;
-    }
-
-    .sidebar ul {
-      list-style: none;
-      padding: 0;
-    }
-
-    .sidebar ul li {
-      margin: 15px 0;
-    }
-
-    .sidebar ul li a {
-      color: white;
-      text-decoration: none;
-      display: block;
-      padding: 8px;
-      border-radius: 4px;
-    }
-
-    .sidebar ul li a:hover {
-      background-color: #34495e;
-    }
-
-    .main {
-      flex: 1;
-      background-color: #ecf0f1;
-      padding: 20px;
-    }
-
-    .main h1 {
-      font-size: 24px;
-      margin-bottom: 20px;
-    }
-
-    .card {
-      background-color: white;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      margin-bottom: 30px;
-    }
-
-    input, button {
-      padding: 10px;
-      margin-bottom: 12px;
-      border-radius: 6px;
-      font-size: 16px;
-    }
-
-    button {
-      background-color: #007bff;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #0056b3;
-    }
-
-    table {
-      width: 100%;
-      margin-top: 20px;
-      border-collapse: collapse;
-    }
-
-    table th, table td {
-      padding: 12px;
-      text-align: left;
-      border: 1px solid #ddd;
-    }
-
-    table th {
-      background-color: #007bff;
-      color: white;
-    }
-
-    table tr:nth-child(even) {
-      background-color: #f2f2f2;
-    }
-  </style>
+  <link rel="stylesheet" href="/static/reportes.css">
+  
 </head>
 <body>
   <!-- Encabezado -->
   <div class="header">
     <div class="header-column">
-      <span class="left-text" id="usuario-logueado">Bienvenido</span>
+      <span id="usuario-logueado">Bienvenido</span>
     </div>
     <div class="header-column center-column">
       <img src="logo3-removebg-preview.png" alt="Logo del ERP" class="logo" />
@@ -354,6 +220,15 @@
       `;
     });
   }
+  // Marcar la opción activa en el sidebar
+    const links = document.querySelectorAll('.sidebar a');
+    const currentPage = window.location.pathname.split("/").pop(); // por ejemplo: "usuarios.html"
+
+    links.forEach(link => {
+    if (link.getAttribute("href") === currentPage) {
+      link.classList.add("active");
+      }
+    });
 </script>
 
 </body>

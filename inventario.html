@@ -4,108 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Inventario - ERP</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-    }
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 30px;
-      background-color: white;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .left-text { font-size: 16px; }
-    .logo { height: 80px; }
-    .logout {
-      text-decoration: none;
-      color: #007bff;
-      font-size: 16px;
-    }
-    .logout:hover { text-decoration: underline; }
-    .content {
-      display: flex;
-      flex: 1;
-      padding: 30px;
-      gap: 30px;
-    }
-    .sidebar {
-      width: 220px;
-      background-color: #2c3e50;
-      color: white;
-      height: 100%;
-      padding: 20px;
-    }
-    .sidebar h2 { font-size: 20px; margin-bottom: 20px; text-align: center; }
-    .sidebar ul { list-style: none; padding: 0; }
-    .sidebar ul li { margin: 15px 0; }
-    .sidebar ul li a {
-      color: white;
-      text-decoration: none;
-      display: block;
-      padding: 8px;
-      border-radius: 4px;
-    }
-    .sidebar ul li a:hover { background-color: #34495e; }
-    .main {
-      flex: 1;
-      background-color: #ecf0f1;
-      padding: 20px;
-    }
-    .main h1 { font-size: 24px; margin-bottom: 20px; }
-    .card {
-      background-color: white;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      margin-bottom: 30px;
-    }
-    input {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 12px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 16px;
-    }
-    button {
-      padding: 12px 20px;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 16px;
-    }
-    button:hover { background-color: #0056b3; }
-    #mensaje { margin-top: 15px; font-weight: bold; }
-    table {
-      width: 100%;
-      margin-top: 20px;
-      border-collapse: collapse;
-    }
-    table th, table td {
-      padding: 12px;
-      text-align: left;
-      border: 1px solid #ddd;
-    }
-    table th { background-color: #007bff; color: white; }
-    table tr:nth-child(even) { background-color: #f2f2f2; }
-    .icon {
-      cursor: pointer;
-      color: #007bff;
-      font-size: 18px;
-      margin-right: 10px;
-    }
-    .alerta-stock { background-color: #fff3cd; }
-    .mayor-stock { background-color: #d4edda; }
-    .alerta-minima { background-color: #f8d7da; }
-  </style>
+  <link rel="stylesheet" href="/static/lateral.css">
 </head>
 <body>
   <div class="header">
@@ -122,14 +21,15 @@
     <div class="sidebar">
       <h2>Mi ERP</h2>
       <ul>
-        <li><a href="dashboard.html">Inicio</a></li>
-        <li><a href="ventas.html">Ventas</a></li>
-        <li><a href="compras.html">Compras</a></li>
-        <li><a href="inventario.html">Inventario</a></li>
-        <li><a href="reportes.html">Reportes</a></li>
-        <li><a href="usuarios.html">Usuarios</a></li>
+        <li><a href="dashboard.html" data-rol="todos">Inicio</a></li>
+        <li><a href="ventas.html" data-rol="Administrador,Vendedor,Bodega">Ventas</a></li>
+        <li><a href="compras.html" data-rol="Administrador,Bodega">Compras</a></li>
+        <li><a href="inventario.html" data-rol="Administrador,Bodega">Inventario</a></li>
+        <li><a href="reportes.html" data-rol="Administrador,Bodega">Reportes</a></li>
+        <li><a href="usuarios.html" data-rol="Administrador">Usuarios</a></li>
       </ul>
     </div>
+
     <div class="main">
       <h1>Inventario</h1>
       <div class="card">
@@ -165,40 +65,41 @@
     import { db } from './firebase.js';
     import { collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
-  
+
     const auth = getAuth();
     const usuarioSpan = document.getElementById("usuario-logueado");
-  
+
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
         window.location.href = "index.html";
         return;
       }
-  
+
       const uid = user.uid;
       const ref = doc(db, "usuarios", uid);
       const snap = await getDoc(ref);
-  
+
       if (!snap.exists()) {
         alert("⚠️ Tu perfil no está registrado en el sistema.");
         window.location.href = "index.html";
         return;
       }
-  
+
       const data = snap.data();
       const nombre = data.nombre || "Usuario";
       const rol = (data.rol || "").trim();
       usuarioSpan.textContent = `Bienvenido, ${nombre}`;
-  
+
       // Mostrar solo opciones permitidas
       const links = document.querySelectorAll(".sidebar a");
       links.forEach(link => {
         const permitidos = link.getAttribute("data-rol");
-        if (permitidos !== "todos" && !permitidos.includes(rol)) {
+        if (!permitidos || permitidos === "todos") return;
+        if (!permitidos.includes(rol)) {
           link.parentElement.style.display = "none";
         }
       });
-  
+
       // Bloquear acceso si no tiene rol adecuado
       const permitidosEnInventario = ["Administrador", "Bodega"];
       if (!permitidosEnInventario.includes(rol)) {
@@ -206,25 +107,25 @@
         window.location.href = "dashboard.html";
         return;
       }
-  
+
       obtenerProductos();
     });
-  
+
     window.cerrarSesion = function () {
       localStorage.clear();
       auth.signOut().then(() => window.location.href = "index.html");
     };
-  
+
     const tablaBody = document.getElementById("tablaProductos").getElementsByTagName('tbody')[0];
     let idEditando = null;
     let productos = [];
-  
+
     async function obtenerProductos() {
       const snapshot = await getDocs(collection(db, "inventario"));
       productos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       mostrarProductos(productos);
     }
-  
+
     function mostrarProductos(listaProductos) {
       tablaBody.innerHTML = "";
       listaProductos.forEach(producto => {
@@ -232,7 +133,7 @@
         if (producto.cantidad <= (producto.cantidadAlerta || 10)) row.classList.add("alerta-minima");
         else if (producto.cantidad < 10) row.classList.add("alerta-stock");
         else if (producto.cantidad >= 50) row.classList.add("mayor-stock");
-  
+
         row.innerHTML = `
           <td>${producto.nombre}</td>
           <td>${producto.cantidad}</td>
@@ -245,7 +146,7 @@
           </td>`;
       });
     }
-  
+
     window.editarProducto = async function(id) {
       const productoRef = doc(db, "inventario", id);
       const productoSnap = await getDoc(productoRef);
@@ -259,7 +160,7 @@
         idEditando = id;
       }
     };
-  
+
     window.eliminarProducto = async function(id) {
       const confirmar = confirm("¿Seguro que deseas eliminar este producto?");
       if (confirmar) {
@@ -267,7 +168,7 @@
         obtenerProductos();
       }
     };
-  
+
     window.filtrarProductos = async function() {
       const texto = document.getElementById("busquedaProducto").value.trim().toLowerCase();
       const snapshot = await getDocs(collection(db, "inventario"));
@@ -289,26 +190,26 @@
         }
       });
     };
-  
+
     document.getElementById("btnGuardar").addEventListener("click", async function () {
       const nombre = document.getElementById("nombre").value;
       const cantidad = parseInt(document.getElementById("cantidad").value);
       const cantidadAlerta = parseInt(document.getElementById("cantidadAlerta").value);
       const precio = parseFloat(document.getElementById("precio").value);
       const imagen = document.getElementById("imagen").value;
-  
+
       if (!nombre || !cantidad || !precio) {
         alert("Por favor, completa todos los campos");
         return;
       }
-  
+
       const producto = { nombre, cantidad, cantidadAlerta, precio, imagen };
       if (idEditando) {
         await updateDoc(doc(db, "inventario", idEditando), producto);
       } else {
         await addDoc(collection(db, "inventario"), producto);
       }
-  
+
       obtenerProductos();
       document.getElementById("nombre").value = "";
       document.getElementById("cantidad").value = "";
@@ -318,6 +219,5 @@
       idEditando = null;
     });
   </script>
-  
 </body>
 </html>

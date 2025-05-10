@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Caja - ERP</title>
+  <link rel="stylesheet" href="/static/lateral.css">
+
+</head>
+<body>
+
+  <div class="header">
+    <div class="header-column"><span class="left-text" id="usuario-logueado">Bienvenido</span></div>
+    <div class="header-column center-column">
+      <img src="logo3-removebg-preview.png" alt="Logo del ERP" class="logo" />
+    </div>
+    <div class="header-column right-column">
+      <a href="#" class="logout" onclick="cerrarSesion()">Cerrar sesión</a>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="sidebar">
+      <h2>Mi ERP</h2>
+      <ul>
+        <li><a href="dashboard.html">Inicio</a></li>
+        <li><a href="ventas.html">Ventas</a></li>
+        <li><a href="compras.html">Compras</a></li>
+        <li><a href="inventario.html">Inventario</a></li>
+        <li><a href="reportes.html">Reportes</a></li>
+        <li><a href="usuarios.html">Usuarios</a></li>
+        <li><a href="caja.html">Caja</a></li>
+      </ul>
+    </div>
+
+    <div class="main">
+      <div class="card">
+        <p class="info-text" id="bienvenida">Bienvenido, listo para las ventas del día.</p>
+        <button id="btnAbrirCaja">Abrir Caja</button>
+        <p id="estadoCaja"></p>
+        <div id="accesoVentas" style="display: none; margin-top: 20px;">
+          <a href="ventas.html">
+            <button>Ir a Ventas</button>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div id="modalCaja" class="modal-overlay">
+    <div class="modal-content">
+      <h3>Abrir Caja</h3>
+      <label for="montoInicial">Monto inicial en caja:</label>
+      <input type="number" id="montoInicial" placeholder="Ej. 100.00" />
+      <div class="modal-buttons">
+        <button id="confirmarApertura">Confirmar</button>
+        <button id="cancelarModal">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { db } from './firebase.js';
+    import {
+      collection, addDoc, query, where, getDocs
+    } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+
+    const usuario = localStorage.getItem("usuario");
+    const uid = localStorage.getItem("uid");
+
+    if (!usuario || !uid) {
+      window.location.href = "index.html";
+    } else {
+      const nombreCapitalizado = usuario.charAt(0).toUpperCase() + usuario.slice(1);
+      document.getElementById("usuario-logueado").textContent = `Bienvenido, ${nombreCapitalizado}`;
+    }
+
+    window.cerrarSesion = function () {
+      localStorage.clear();
+      window.location.href = "index.html";
+    };
+
+    const btnAbrirCaja = document.getElementById("btnAbrirCaja");
+    const modalCaja = document.getElementById("modalCaja");
+    const confirmarApertura = document.getElementById("confirmarApertura");
+    const cancelarModal = document.getElementById("cancelarModal");
+    const montoInicialInput = document.getElementById("montoInicial");
+    const estadoCaja = document.getElementById("estadoCaja");
+    const accesoVentas = document.getElementById("accesoVentas");
+
+    async function verificarCajaAbierta() {
+      const hoy = new Date().toISOString().split("T")[0];
+      const q = query(
+        collection(db, "cajas"),
+        where("uid", "==", uid),
+        where("fecha", "==", hoy),
+        where("estado", "==", "abierta")
+      );
+      const snapshot = await getDocs(q);
+      if (!snapshot.empty) {
+        estadoCaja.textContent = "✅ Caja abierta";
+        btnAbrirCaja.style.display = "none";
+        accesoVentas.style.display = "block";
+      }
+    }
+
+    btnAbrirCaja.addEventListener("click", () => {
+      montoInicialInput.value = "";
+      modalCaja.style.display = "flex";
+    });
+
+    cancelarModal.addEventListener("click", () => {
+      modalCaja.style.display = "none";
+    });
+
+    confirmarApertura.addEventListener("click", async () => {
+      const monto = parseFloat(montoInicialInput.value);
+      if (isNaN(monto)) {
+        alert("Ingresa un monto válido.");
+        return;
+      }
+
+      const hoy = new Date();
+      const caja = {
+        uid,
+        usuario,
+        fecha: hoy.toISOString().split("T")[0],
+        horaApertura: hoy.toLocaleTimeString(),
+        montoInicial: monto,
+        estado: "abierta"
+      };
+
+      await addDoc(collection(db, "cajas"), caja);
+      estadoCaja.textContent = "✅ Caja abierta";
+      btnAbrirCaja.style.display = "none";
+      accesoVentas.style.display = "block";
+      modalCaja.style.display = "none";
+    });
+
+    verificarCajaAbierta();
+  </script>
+</body>
+</html>

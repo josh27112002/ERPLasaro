@@ -125,7 +125,7 @@
      Si modificas aquí, afecta botones como los de inventario. */
   button {
     padding: 12px 20px;
-    background-color: #ca1818a6;
+    background-color: #cc1121;
     color: white;
     border: none;
     border-radius: 6px;
@@ -133,7 +133,7 @@
     font-size: 16px;
   }
   button:hover {
-    background-color: #cc1121;
+    background-color: #ce626b;
   }
   
   /* ===== MENSAJES =====

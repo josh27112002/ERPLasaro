@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Inventario - ERP</title>
   <link rel="stylesheet" href="/static/lateral.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.5/dist/sweetalert2.all.min.js"></script>
 </head>
 <body>
   <div class="header">
@@ -161,13 +162,37 @@
       }
     };
 
-    window.eliminarProducto = async function(id) {
-      const confirmar = confirm("¿Seguro que deseas eliminar este producto?");
-      if (confirmar) {
-        await deleteDoc(doc(db, "inventario", id));
-        obtenerProductos();
+    window.eliminarProducto = async function(uid) {
+  Swal.fire({
+    title: '¿Estás seguro?',
+    text: "Esta acción eliminará al producto permanentemente.",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#3085d6',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'Sí, eliminar',
+    cancelButtonText: 'Cancelar'
+  }).then(async (result) => {
+    if (result.isConfirmed) {
+      try {
+        await deleteDoc(doc(db, "inventario", uid));
+        obtenerUsuarios();
+        Swal.fire(
+          '¡Eliminado!',
+          'El producto ha sido eliminado correctamente.',
+          'success'
+        );
+      } catch (error) {
+        console.error("Error al eliminar el producto:", error);
+        Swal.fire(
+          '¡Error!',
+          'Hubo un problema al intentar eliminar el producto.',
+          'error'
+        );
       }
-    };
+    }
+  });
+}
 
     window.filtrarProductos = async function() {
       const texto = document.getElementById("busquedaProducto").value.trim().toLowerCase();
@@ -194,12 +219,27 @@
     document.getElementById("btnGuardar").addEventListener("click", async function () {
       const nombre = document.getElementById("nombre").value;
       const cantidad = parseInt(document.getElementById("cantidad").value);
-      const alerta = parseInt(document.getElementById("alerta").value);
+      const alerta = parseInt(document.getElementById("cantidadAlerta").value);
       const precio = parseFloat(document.getElementById("precio").value);
       const imagen = document.getElementById("imagen").value;
 
-      if (!nombre || !cantidad || !precio) {
-        alert("Por favor, completa todos los campos");
+// Revisa si algun campo está vacío
+      if (!nombre || cantidad === "" || alerta === "" || precio === "") {
+        Swal.fire({
+          icon: 'error',
+          title: 'Campos incompletos',
+          text: 'Faltan campos por llenar. Por favor, completa todos los campos obligatorios (nombre, cantidad, cantidad de alerta, precio).'
+        });
+        return;
+      }
+
+      // Validar que la cantidad y el precio sean números y cantidad sea mayor a 5
+       if ( alerta < 5) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Cantidad de alerta inválida',
+          text: 'Por favor, ingresa una cantidad de alerta válida mayor a 5.'
+        });
         return;
       }
 

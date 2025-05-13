@@ -130,14 +130,14 @@
       tablaBody.innerHTML = "";
       listaProductos.forEach(producto => {
         const row = tablaBody.insertRow();
-        if (producto.cantidad <= (producto.cantidadAlerta || 10)) row.classList.add("alerta-minima");
+        if (producto.cantidad <= (producto.alerta || 10)) row.classList.add("alerta-minima");
         else if (producto.cantidad < 10) row.classList.add("alerta-stock");
         else if (producto.cantidad >= 50) row.classList.add("mayor-stock");
 
         row.innerHTML = `
           <td>${producto.nombre}</td>
           <td>${producto.cantidad}</td>
-          <td>${producto.cantidadAlerta || ''}</td>
+          <td>${producto.alerta || ''}</td>
           <td>${producto.precio}</td>
           <td><img src="${producto.imagen || ''}" width="50"></td>
           <td>
@@ -154,7 +154,7 @@
         const producto = productoSnap.data();
         document.getElementById("nombre").value = producto.nombre;
         document.getElementById("cantidad").value = producto.cantidad;
-        document.getElementById("cantidadAlerta").value = producto.cantidadAlerta || '';
+        document.getElementById("alerta").value = producto.alerta || '';
         document.getElementById("precio").value = producto.precio;
         document.getElementById("imagen").value = producto.imagen || '';
         idEditando = id;
@@ -180,7 +180,7 @@
           row.innerHTML = `
             <td>${producto.nombre}</td>
             <td>${producto.cantidad}</td>
-            <td>${producto.cantidadAlerta || ''}</td>
+            <td>${producto.alerta || ''}</td>
             <td>${producto.precio}</td>
             <td><img src="${producto.imagen || ''}" width="50"></td>
             <td>
@@ -194,7 +194,7 @@
     document.getElementById("btnGuardar").addEventListener("click", async function () {
       const nombre = document.getElementById("nombre").value;
       const cantidad = parseInt(document.getElementById("cantidad").value);
-      const cantidadAlerta = parseInt(document.getElementById("cantidadAlerta").value);
+      const alerta = parseInt(document.getElementById("cantidadAlerta").value);
       const precio = parseFloat(document.getElementById("precio").value);
       const imagen = document.getElementById("imagen").value;
 
@@ -203,7 +203,7 @@
         return;
       }
 
-      const producto = { nombre, cantidad, cantidadAlerta, precio, imagen };
+      const producto = { nombre, cantidad, alerta, precio, imagen };
       if (idEditando) {
         await updateDoc(doc(db, "inventario", idEditando), producto);
       } else {
@@ -213,7 +213,7 @@
       obtenerProductos();
       document.getElementById("nombre").value = "";
       document.getElementById("cantidad").value = "";
-      document.getElementById("cantidadAlerta").value = "";
+      document.getElementById("alerta").value = "";
       document.getElementById("precio").value = "";
       document.getElementById("imagen").value = "";
       idEditando = null;

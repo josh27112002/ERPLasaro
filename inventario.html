@@ -17,12 +17,12 @@
     </div>
   </div>
 
-  <div class="content">
+  < <div class="content">
     <div class="sidebar">
       <h2>Mi ERP</h2>
       <ul>
         <li><a href="dashboard.html" data-rol="todos">Inicio</a></li>
-        <li><a href="ventas.html" data-rol="Administrador,Vendedor,Bodega">Ventas</a></li>
+        <li><a href="caja.html" data-rol="Administrador,Vendedor,Bodega">Ventas</a></li>
         <li><a href="compras.html" data-rol="Administrador,Bodega">Compras</a></li>
         <li><a href="inventario.html" data-rol="Administrador,Bodega">Inventario</a></li>
         <li><a href="reportes.html" data-rol="Administrador,Bodega">Reportes</a></li>
@@ -217,6 +217,16 @@
       document.getElementById("precio").value = "";
       document.getElementById("imagen").value = "";
       idEditando = null;
+    });
+
+    // Marcar la opción activa en el sidebar
+    const links = document.querySelectorAll('.sidebar a');
+    const currentPage = window.location.pathname.split("/").pop(); // por ejemplo: "usuarios.html"
+
+    links.forEach(link => {
+    if (link.getAttribute("href") === currentPage) {
+      link.classList.add("active");
+      }
     });
   </script>
 </body>

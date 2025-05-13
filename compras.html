@@ -248,6 +248,16 @@
 
     mostrarCompras();
     mostrarInventario();
+
+    // Marcar la opción activa en el sidebar
+    const links = document.querySelectorAll('.sidebar a');
+    const currentPage = window.location.pathname.split("/").pop(); // por ejemplo: "usuarios.html"
+
+    links.forEach(link => {
+    if (link.getAttribute("href") === currentPage) {
+      link.classList.add("active");
+      }
+    });
 </script>
 
 </body>

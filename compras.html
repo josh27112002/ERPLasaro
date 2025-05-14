@@ -2,19 +2,24 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Compras - ERP</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ventas - ERP</title>
   <link rel="stylesheet" href="/static/lateral.css">
-
 </head>
 <body>
   <div class="header">
-    <div class="header-column"><span class="left-text" id="usuario-logueado">Bienvenido</span></div>
+    <div class="header-column">
+      <span id="usuario-logueado">Bienvenido</span>
+    </div>
     <div class="header-column center-column">
       <img src="logo3-removebg-preview.png" alt="Logo del ERP" class="logo" />
     </div>
     <div class="header-column right-column">
-      <a href="#" class="logout" onclick="cerrarSesion()">Cerrar sesión</a>
+      <a href="index.html" class="logout" onclick="cerrarSesion()">Cerrar sesión</a>
+    </div>
+
+         <div class="header-column right-column">
+      <a href="cerrar.html" class="logout" onclick="cerrar()">Cerrar caja</a>
     </div>
   </div>
 
@@ -32,45 +37,57 @@
     </div>
 
     <div class="main">
-      <h1>Registrar Compra</h1>
+      <h1>Realizar Venta</h1>
+
+      <!-- Modal de cierre de caja -->
+<div id="modalCierreCaja" class="modal-overlay" style="display:none;">
+  <div class="modal-content">
+    <h3>¿Deseas cerrar la caja?</h3>
+    <div id="resumenCierreCaja" style="margin-bottom: 20px;">
+      <p><strong>Monto Inicial:</strong> Q<span id="montoInicialResumen"></span></p>
+      <p><strong>Total Vendido:</strong> Q<span id="totalVendidoResumen"></span></p>
+      <p><strong>Número de Ventas:</strong> <span id="cantidadVentasResumen"></span></p>
+      <p><strong>Total Final en Caja:</strong> Q<span id="totalFinalResumen"></span></p>
+    </div>
+    <div class="modal-buttons">
+      <button id="confirmarCierre">Confirmar Cierre</button>
+      <button id="cancelarCierre">Cancelar</button>
+    </div>
+  </div>
+</div>
+
       <div class="card">
-        <input type="text" id="nombreProducto" placeholder="Nombre del producto">
-        <input type="number" id="cantidadCompra" placeholder="Cantidad comprada">
-        <input type="number" id="precioCompra" placeholder="Precio unitario">
-        <input type="text" id="imagenCompra" placeholder="URL de imagen (opcional)">
-        <input type="number" id="cantidadAlerta" placeholder="Cantidad mínima para alerta">
-        <input type="text" id="proveedor" placeholder="Nombre del proveedor">
-        <button id="btnRegistrarCompra">Registrar compra</button>
-        <p id="mensajeCompra"></p>
+        <input type="text" id="nombreProducto" placeholder="Nombre del producto" oninput="mostrarSugerencias()" autocomplete="off">
+        <input type="number" id="cantidadVenta" placeholder="Cantidad a vender" oninput="calcularTotal()">
+        <input type="number" id="descuento" placeholder="Descuento (%)" oninput="calcularTotal()" min="0" max="100">
+        <div class="total">Fer sin descuento: <span id="totalSinDescuento">0.00 Q</span></div>
+        <div class="total-discount">Total con descuento: <span id="totalConDescuento">0.00 Q</span></div>
+        <button id="btnRealizarVenta">Realizar Venta</button>
+        <p id="mensaje"></p>
       </div>
 
-      <h2>Reporte de Compras</h2>
-      <table id="tablaCompras">
-        <thead>
-          <tr>
-            <th>Producto</th>
-            <th>Cantidad</th>
-            <th>Precio Unitario</th>
-            <th>Proveedor</th>
-            <th>Fecha</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-
-      <h2>Filtrar Inventario</h2>
-      <input type="text" id="busquedaProducto" placeholder="Buscar por nombre" oninput="filtrarInventario()">
-
-      <h2>Inventario Actual</h2>
-      <table id="tablaInventario">
+      <h2>Productos en Inventario</h2>
+      <table id="tablaProductos">
         <thead>
           <tr>
             <th>Nombre</th>
             <th>Cantidad</th>
             <th>Precio</th>
-            <th>Alerta</th>
-            <th>Proveedor</th>
             <th>Imagen</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <h2>Ventas Realizadas</h2>
+      <table id="tablaVentas">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Cantidad</th>
+            <th>Total</th>
+            <th>Fecha</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -80,11 +97,23 @@
 
   <script type="module">
     import { db } from './firebase.js';
-    import { collection, addDoc, getDocs, doc, updateDoc, query, where, getDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+    import {
+      collection, addDoc, getDocs, doc, updateDoc, getDoc, query, where
+    } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
 
+    const formatter = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'GTQ' });
     const auth = getAuth();
-    const spanUsuario = document.getElementById("usuario-logueado");
+
+    function mostrarOpcionesPermitidas(rolUsuario) {
+      const links = document.querySelectorAll('.sidebar a');
+      links.forEach(link => {
+        const rolesPermitidos = link.getAttribute('data-rol');
+        if (!rolesPermitidos || (rolesPermitidos !== "todos" && !rolesPermitidos.includes(rolUsuario))) {
+          link.style.display = "none";
+        }
+      });
+    }
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
@@ -93,163 +122,240 @@
       }
 
       const uid = user.uid;
-      const userDoc = await getDoc(doc(db, "usuarios", uid));
+      const ref = doc(db, "usuarios", uid);
+      const snap = await getDoc(ref);
 
-      if (!userDoc.exists()) {
-        alert("⚠️ Tu perfil no está registrado.");
+      if (!snap.exists()) {
+        alert("⚠️ Tu perfil no está registrado en el sistema.");
         window.location.href = "index.html";
         return;
       }
 
-      const data = userDoc.data();
+      const data = snap.data();
       const nombre = data.nombre || "Usuario";
-      const rol = (data.rol || "Desconocido").trim();
+      const rol = data.rol || "";
 
-      spanUsuario.textContent = `Bienvenido, ${nombre}`;
+      document.getElementById("usuario-logueado").textContent = `Bienvenido, ${nombre}`;
+      mostrarOpcionesPermitidas(rol);
 
-      // Mostrar solo links permitidos
-      const enlaces = document.querySelectorAll(".sidebar a");
-      enlaces.forEach(link => {
-        const roles = link.getAttribute("data-rol");
-        if (roles !== "todos" && !roles.includes(rol)) {
-          link.parentElement.style.display = "none";
-        }
-      });
-
-      // Si el usuario no tiene permisos para esta página
-      const permitido = ["Administrador", "Bodega"];
-      if (!permitido.includes(rol)) {
-        alert("⚠️ No tienes permisos para acceder a esta página.");
+      if (!["Administrador", "Vendedor", "Bodega"].includes(rol)) {
+        alert("⚠️ No tienes permisos para acceder a esta sección.");
         window.location.href = "dashboard.html";
         return;
       }
+
+      obtenerProductos();
+      obtenerVentas();
+      verificarCajaAbiertaYMostrarCerrar(uid);
     });
 
     window.cerrarSesion = function () {
-      localStorage.removeItem("usuario");
-      window.location.href = "index.html";
+      localStorage.clear();
+      auth.signOut().then(() => window.location.href = "index.html");
+    };
+
+    let productos = [];
+
+    async function obtenerProductos() {
+      const snapshot = await getDocs(collection(db, "inventario"));
+      productos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const tbody = document.querySelector("#tablaProductos tbody");
+      tbody.innerHTML = '';
+      productos.forEach(p => {
+        const row = tbody.insertRow();
+        if (p.cantidad <= 5) row.classList.add('stock-bajo');
+        row.innerHTML = `
+          <td>${p.nombre}</td>
+          <td>${p.cantidad}</td>
+          <td>${formatter.format(p.precio)}</td>
+          <td><img src="${p.imagen}" width="50"></td>
+          <td><span class="icon">✏️</span></td>
+        `;
+      });
     }
 
-    const comprasRef = collection(db, "compras");
-    const inventarioRef = collection(db, "inventario");
+    async function obtenerVentas() {
+      const snapshot = await getDocs(collection(db, "ventas"));
+      const tbody = document.querySelector("#tablaVentas tbody");
+      tbody.innerHTML = '';
+      snapshot.docs.forEach(doc => {
+        const venta = doc.data();
+        const fecha = new Date(venta.fecha.seconds * 1000);
+        const row = tbody.insertRow();
+        row.innerHTML = `
+          <td>${venta.producto}</td>
+          <td>${venta.cantidad}</td>
+          <td>${formatter.format(venta.total)}</td>
+          <td>${fecha.toLocaleString()}</td>
+        `;
+      });
+    }
 
-    const tablaComprasBody = document.querySelector("#tablaCompras tbody");
-    const tablaInventarioBody = document.querySelector("#tablaInventario tbody");
+    function mostrarSugerencias() {
+      const input = document.getElementById('nombreProducto');
+      const valor = input.value.toLowerCase();
+      const sugerencias = productos.filter(p => p.nombre.toLowerCase().includes(valor));
+      sugerencias.sort((a, b) => a.nombre.toLowerCase().startsWith(valor) ? -1 : 1);
+      const existente = document.getElementById('autocomplete-suggestions');
+      if (existente) existente.remove();
+      if (sugerencias.length && valor !== '') {
+        const div = document.createElement('div');
+        div.id = 'autocomplete-suggestions';
+        div.classList.add('autocomplete-suggestions');
+        sugerencias.forEach(p => {
+          const item = document.createElement('div');
+          item.textContent = p.nombre;
+          item.onclick = () => {
+            input.value = p.nombre;
+            div.remove();
+            calcularTotal();
+          };
+          div.appendChild(item);
+        });
+        input.parentElement.appendChild(div);
+      }
+    }
 
-    document.getElementById("btnRegistrarCompra").addEventListener("click", async () => {
-      const nombre = document.getElementById("nombreProducto").value.trim();
-      const cantidad = parseInt(document.getElementById("cantidadCompra").value);
-      const precio = parseFloat(document.getElementById("precioCompra").value);
-      const imagen = document.getElementById("imagenCompra").value.trim();
-      const alerta = parseInt(document.getElementById("cantidadAlerta").value);
-      const proveedor = document.getElementById("proveedor").value.trim();
-      const mensaje = document.getElementById("mensajeCompra");
+    function calcularTotal() {
+      const nombre = document.getElementById('nombreProducto').value.trim().toLowerCase();
+      const cantidad = parseInt(document.getElementById('cantidadVenta').value) || 0;
+      let descuento = document.getElementById('descuento').value;
+      descuento = descuento === '' ? 0 : parseFloat(descuento);
+      if (isNaN(descuento) || descuento < 0 || descuento > 100) descuento = 0;
 
-      if (!nombre || isNaN(cantidad) || isNaN(precio) || !proveedor) {
-        mensaje.textContent = "⚠️ Todos los campos son obligatorios.";
+      const producto = productos.find(p => p.nombre.toLowerCase() === nombre);
+
+      let totalSinDescuento = 0;
+      let totalConDescuento = 0;
+
+      if (producto && cantidad > 0) {
+        totalSinDescuento = producto.precio * cantidad;
+        totalConDescuento = totalSinDescuento * (1 - (descuento / 100));
+      }
+
+      document.getElementById('totalSinDescuento').textContent = formatter.format(totalSinDescuento);
+      document.getElementById('totalConDescuento').textContent = formatter.format(totalConDescuento);
+    }
+
+    document.getElementById("btnRealizarVenta").addEventListener("click", async () => {
+      const productoNombre = document.getElementById('nombreProducto').value;
+      const cantidad = parseInt(document.getElementById('cantidadVenta').value);
+      const descuento = parseFloat(document.getElementById('descuento').value) || 0;
+
+      if (!productoNombre || cantidad <= 0) {
+        document.getElementById("mensaje").textContent = "Por favor, complete todos los campos correctamente.";
         return;
       }
 
-      const fecha = new Date().toLocaleString();
-      await addDoc(comprasRef, { nombre, cantidad, precio, proveedor, fecha });
+      const producto = productos.find(p => p.nombre.toLowerCase() === productoNombre.toLowerCase());
+      if (!producto) {
+        document.getElementById("mensaje").textContent = "Producto no encontrado.";
+        return;
+      }
+      if (producto.cantidad < cantidad) {
+        document.getElementById("mensaje").textContent = "No hay suficiente stock.";
+        return;
+      }
 
-      const q = query(inventarioRef, where("nombre", "==", nombre));
+      let total = producto.precio * cantidad;
+      if (descuento > 0) {
+        total -= total * (descuento / 100);
+      }
+
+      await addDoc(collection(db, "ventas"), {
+        producto: producto.nombre,
+        cantidad,
+        total,
+        fecha: new Date()
+      });
+
+      const refProducto = doc(db, "inventario", producto.id);
+      await updateDoc(refProducto, { cantidad: producto.cantidad - cantidad });
+
+      document.getElementById("mensaje").textContent = "Venta realizada con éxito!";
+      obtenerProductos();
+      obtenerVentas();
+      document.getElementById('nombreProducto').value = '';
+      document.getElementById('cantidadVenta').value = '';
+      document.getElementById('descuento').value = '';
+      document.getElementById('totalSinDescuento').textContent = "0.00 Q";
+      document.getElementById('totalConDescuento').textContent = "0.00 Q";
+    });
+
+    // Mostrar botón de cierre de caja si hay una caja abierta
+    async function verificarCajaAbiertaYMostrarCerrar(uid) {
+      const hoy = new Date().toISOString().split("T")[0];
+      const q = query(
+        collection(db, "cajas"),
+        where("uid", "==", uid),
+        where("fecha", "==", hoy),
+        where("estado", "==", "abierta")
+      );
       const snapshot = await getDocs(q);
 
       if (!snapshot.empty) {
-        const docExistente = snapshot.docs[0];
-        const nuevaCantidad = docExistente.data().cantidad + cantidad;
-        await updateDoc(doc(db, "inventario", docExistente.id), {
-          cantidad: nuevaCantidad,
-          precio,
-          imagen: imagen || docExistente.data().imagen || "",
-          alerta: docExistente.data().alerta || alerta || 0,
-          proveedor: proveedor || docExistente.data().proveedor || ""
+        const cajaDoc = snapshot.docs[0];
+        const modalCierreCaja = document.getElementById("modalCierreCaja");
+const confirmarCierre = document.getElementById("confirmarCierre");
+const cancelarCierre = document.getElementById("cancelarCierre");
+
+async function verificarCajaAbiertaYMostrarCerrar(uid) {
+  const hoy = new Date().toISOString().split("T")[0];
+  const q = query(
+    collection(db, "cajas"),
+    where("uid", "==", uid),
+    where("fecha", "==", hoy),
+    where("estado", "==", "abierta")
+  );
+  const snapshot = await getDocs(q);
+
+  if (!snapshot.empty) {
+    const cajaDoc = snapshot.docs[0];
+    const cajaData = cajaDoc.data();
+    btnCerrarCaja.style.display = "block";
+
+    btnCerrarCaja.onclick = async () => {
+      const ventasHoy = await getDocs(query(
+        collection(db, "ventas"),
+        where("fecha", ">=", new Date(`${hoy}T00:00:00`)),
+        where("fecha", "<=", new Date(`${hoy}T23:59:59`))
+      ));
+      let total = 0;
+      ventasHoy.forEach(doc => total += doc.data().total || 0);
+      const cantidad = ventasHoy.size;
+      const montoInicial = cajaData.montoInicial;
+      const totalFinal = montoInicial + total;
+
+      document.getElementById("montoInicialResumen").textContent = montoInicial.toFixed(2);
+      document.getElementById("totalVendidoResumen").textContent = total.toFixed(2);
+      document.getElementById("cantidadVentasResumen").textContent = cantidad;
+      document.getElementById("totalFinalResumen").textContent = totalFinal.toFixed(2);
+
+      modalCierreCaja.style.display = "flex";
+
+      confirmarCierre.onclick = async () => {
+        const horaCierre = new Date().toLocaleTimeString();
+        await updateDoc(cajaDoc.ref, {
+          estado: "cerrada",
+          horaCierre: horaCierre,
+          totalVendido: total,
+          totalFinal: totalFinal
         });
-      } else {
-        await addDoc(inventarioRef, {
-          nombre,
-          cantidad,
-          precio,
-          imagen: imagen || "",
-          alerta: alerta || 0,
-          proveedor
-        });
-      }
+        alert("✅ Caja cerrada correctamente.");
+        modalCierreCaja.style.display = "none";
+        btnCerrarCaja.style.display = "none";
+      };
 
-      mensaje.textContent = "✅ Compra registrada y producto actualizado en inventario.";
+      cancelarCierre.onclick = () => {
+        modalCierreCaja.style.display = "none";
+      };
+    };
+  }
+}
+}
+}
 
-      document.getElementById("nombreProducto").value = "";
-      document.getElementById("cantidadCompra").value = "";
-      document.getElementById("precioCompra").value = "";
-      document.getElementById("imagenCompra").value = "";
-      document.getElementById("cantidadAlerta").value = "";
-      document.getElementById("proveedor").value = "";
-
-      mostrarCompras();
-      mostrarInventario();
-    });
-
-    async function mostrarCompras() {
-      const snapshot = await getDocs(comprasRef);
-      tablaComprasBody.innerHTML = "";
-      snapshot.forEach(doc => {
-        const { nombre, cantidad, precio, proveedor, fecha } = doc.data();
-        const row = tablaComprasBody.insertRow();
-        row.innerHTML = `
-          <td>${nombre}</td>
-          <td>${cantidad}</td>
-          <td>${precio}</td>
-          <td>${proveedor}</td>
-          <td>${fecha}</td>
-        `;
-      });
-    }
-
-    async function mostrarInventario() {
-      const snapshot = await getDocs(inventarioRef);
-      tablaInventarioBody.innerHTML = "";
-      snapshot.forEach(doc => {
-        const { nombre, cantidad, precio, imagen, alerta, proveedor } = doc.data();
-        const row = tablaInventarioBody.insertRow();
-        if (alerta && cantidad <= alerta) row.classList.add("alerta-stock");
-        row.innerHTML = `
-          <td>${nombre}</td>
-          <td>${cantidad}</td>
-          <td>${precio}</td>
-          <td>${alerta}</td>
-          <td>${proveedor}</td>
-          <td><img src="${imagen || ''}" width="50"></td>
-        `;
-      });
-    }
-
-    window.filtrarInventario = async function () {
-      const texto = document.getElementById("busquedaProducto").value.trim().toLowerCase();
-      const snapshot = await getDocs(inventarioRef);
-      tablaInventarioBody.innerHTML = "";
-
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        if (data.nombre.toLowerCase().includes(texto)) {
-          const row = tablaInventarioBody.insertRow();
-          if (data.alerta && data.cantidad <= data.alerta) row.classList.add("alerta-stock");
-          row.innerHTML = `
-            <td>${data.nombre}</td>
-            <td>${data.cantidad}</td>
-            <td>${data.precio}</td>
-            <td>${data.alerta}</td>
-            <td>${data.proveedor}</td>
-            <td><img src="${data.imagen || ''}" width="50"></td>
-          `;
-        }
-      });
-    }
-
-    mostrarCompras();
-    mostrarInventario();
-
-    // Marcar la opción activa en el sidebar
+// Marcar la opción activa en el sidebar
     const links = document.querySelectorAll('.sidebar a');
     const currentPage = window.location.pathname.split("/").pop(); // por ejemplo: "usuarios.html"
 
@@ -258,7 +364,6 @@
       link.classList.add("active");
       }
     });
-</script>
-
+  </script>
 </body>
 </html>

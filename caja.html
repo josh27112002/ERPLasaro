@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Caja - ERP</title>
   <link rel="stylesheet" href="/static/lateral.css">
-
 </head>
 <body>
 
@@ -15,6 +14,9 @@
       <img src="logo3-removebg-preview.png" alt="Logo del ERP" class="logo" />
     </div>
     <div class="header-column right-column">
+      <a href="#" class="logout" onclick="cerrarSesion()">Cerrar sesión</a>
+    </div>
+     <div class="header-column right-column">
       <a href="#" class="logout" onclick="cerrarSesion()">Cerrar sesión</a>
     </div>
   </div>
@@ -99,9 +101,14 @@
       );
       const snapshot = await getDocs(q);
       if (!snapshot.empty) {
-        estadoCaja.textContent = "✅ Caja abierta";
+        estadoCaja.textContent = "✅ Caja abierta. Redirigiendo a ventas...";
         btnAbrirCaja.style.display = "none";
         accesoVentas.style.display = "block";
+
+        // 🔁 Redireccionar automáticamente a ventas después de 1 segundo
+        setTimeout(() => {
+          window.location.href = "ventas.html";
+        }, 1000);
       }
     }
 
@@ -142,11 +149,11 @@
 
     // Marcar la opción activa en el sidebar
     const links = document.querySelectorAll('.sidebar a');
-    const currentPage = window.location.pathname.split("/").pop(); // por ejemplo: "usuarios.html"
+    const currentPage = window.location.pathname.split("/").pop();
 
     links.forEach(link => {
-    if (link.getAttribute("href") === currentPage) {
-      link.classList.add("active");
+      if (link.getAttribute("href") === currentPage) {
+        link.classList.add("active");
       }
     });
   </script>

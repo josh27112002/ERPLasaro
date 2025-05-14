@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cerrar Caja</title>
+  <link rel="stylesheet" href="/static/lateral.css" />
+  <style>
+    .mensaje-info {
+      font-size: 14px;
+      color: #333;
+      background: #f5f5f5;
+      padding: 10px;
+      border-left: 4px solid #007BFF;
+      border-radius: 6px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-column"><span class="left-text" id="usuario-logueado">Bienvenido</span></div>
+    <div class="header-column center-column">
+      <img src="logo3-removebg-preview.png" alt="Logo del ERP" class="logo" />
+    </div>
+    <div class="header-column right-column">
+      <a href="index.html" class="logout">Cerrar sesión</a>
+    </div>
+  </div>
+
+  <!-- LAYOUT -->
+  <div class="content">
+    <div class="sidebar">
+      <h2>Mi ERP</h2>
+      <ul>
+        <li><a href="dashboard.html">Inicio</a></li>
+        <li><a href="caja.html">Caja</a></li>
+        <li><a href="ventas.html">Ventas</a></li>
+        <li><a href="compras.html">Compras</a></li>
+        <li><a href="inventario.html">Inventario</a></li>
+        <li><a href="reportes.html">Reportes</a></li>
+        <li><a href="usuarios.html">Usuarios</a></li>
+      </ul>
+    </div>
+
+    <div class="main">
+      <h1>Cerrar Caja</h1>
+      <div class="card">
+        <div id="infoCaja" style="margin-bottom: 20px;"></div>
+        <div id="detalleVentas" style="margin-bottom: 20px;"></div>
+
+        <label for="montoFinal">Monto final contado en caja:</label>
+        <input type="number" id="montoFinal" placeholder="Ej. 250.00" />
+
+        <p class="mensaje-info">
+          Antes de confirmar, asegúrate que el monto contado coincide con lo esperado.<br>
+          Cualquier diferencia quedará registrada.
+        </p>
+
+        <div id="resumenDiferencia" style="margin-top: 10px;"></div>
+
+        <button id="btnCerrarCaja">Confirmar cierre</button>
+        <p id="mensaje" class="mensaje"></p>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { db } from './firebase.js';
+    import {
+      collection, query, where, getDocs, updateDoc, doc, Timestamp
+    } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+    import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
+    import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-functions.js";
+
+    const uid = localStorage.getItem("uid");
+    const usuario = localStorage.getItem("usuario");
+    const auth = getAuth();
+
+    const infoCaja = document.getElementById("infoCaja");
+    const detalleVentas = document.getElementById("detalleVentas");
+    const mensaje = document.getElementById("mensaje");
+    const btn = document.getElementById("btnCerrarCaja");
+    const montoFinalInput = document.getElementById("montoFinal");
+    const resumenDiferencia = document.getElementById("resumenDiferencia");
+
+    const formatoQ = new Intl.NumberFormat('es-GT', {
+      style: 'currency',
+      currency: 'GTQ',
+      minimumFractionDigits: 2
+    });
+
+    let idCaja = null;
+    let montoInicial = 0;
+    let totalVentas = 0;
+
+    if (!uid || !usuario) {
+      window.location.href = "index.html";
+    } else {
+      document.getElementById("usuario-logueado").textContent = `Bienvenido, ${usuario}`;
+    }
+
+    async function cargarResumenCaja() {
+      const hoy = new Date().toISOString().split("T")[0];
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      const end = new Date();
+      end.setHours(23, 59, 59, 999);
+
+      const cajaQuery = query(
+        collection(db, "cajas"),
+        where("uid", "==", uid),
+        where("fecha", "==", hoy),
+        where("estado", "==", "abierta")
+      );
+      const cajaSnap = await getDocs(cajaQuery);
+      if (cajaSnap.empty) {
+        infoCaja.innerHTML = "⚠️ No hay caja abierta para hoy.";
+        btn.disabled = true;
+        return;
+      }
+
+      const cajaDoc = cajaSnap.docs[0];
+      const datosCaja = cajaDoc.data();
+      idCaja = cajaDoc.id;
+      montoInicial = datosCaja.montoInicial || 0;
+
+      const ventasQuery = query(
+        collection(db, "ventas"),
+        where("fecha", ">=", Timestamp.fromDate(start)),
+        where("fecha", "<=", Timestamp.fromDate(end))
+      );
+      const ventasSnap = await getDocs(ventasQuery);
+
+      let detalleHTML = "<strong>🧾 Ventas del día:</strong><ul style='margin-top: 8px;'>";
+      let contador = 1;
+      totalVentas = 0;
+
+      ventasSnap.forEach((doc) => {
+        const venta = doc.data();
+        const total = venta.total || 0;
+        const producto = venta.producto || "Producto no especificado";
+        const cantidad = venta.cantidad || 1;
+        const fecha = venta.fecha.toDate();
+        const hora = fecha.toLocaleTimeString('es-GT');
+
+        totalVentas += total;
+
+        detalleHTML += `<li>🕒 ${hora} - Venta #${contador}<br>
+        🛒 ${producto} x${cantidad} - ${formatoQ.format(total)}</li>`;
+        contador++;
+      });
+
+      detalleHTML += "</ul>";
+      detalleVentas.innerHTML = detalleHTML;
+
+      const totalEsperado = montoInicial + totalVentas;
+
+      infoCaja.innerHTML = `
+        📅 Fecha: <strong>${hoy}</strong><br>
+        🧑 Caja abierta por: <strong>${datosCaja.usuario}</strong><br>
+        💵 Monto inicial: <strong>${formatoQ.format(montoInicial)}</strong><br>
+        💰 Total de ventas: <strong>${formatoQ.format(totalVentas)}</strong><br>
+        🧮 <strong>Total esperado en caja: ${formatoQ.format(totalEsperado)}</strong>
+      `;
+    }
+
+    btn.addEventListener("click", async () => {
+      const montoFinal = parseFloat(montoFinalInput.value);
+      if (isNaN(montoFinal) || montoFinal < 0) {
+        mensaje.textContent = "⚠️ Ingresa un monto válido.";
+        mensaje.className = "mensaje error";
+        return;
+      }
+
+      const totalEsperado = montoInicial + totalVentas;
+      const diferencia = montoFinal - totalEsperado;
+
+      resumenDiferencia.innerHTML = `
+        💳 Monto contado: <strong>${formatoQ.format(montoFinal)}</strong><br>
+        🔎 Diferencia: <strong style="color:${diferencia < 0 ? 'red' : 'green'}">${formatoQ.format(diferencia)}</strong>
+      `;
+
+      const horaCierre = new Date().toLocaleTimeString();
+
+      try {
+        await updateDoc(doc(db, "cajas", idCaja), {
+          montoFinal,
+          horaCierre,
+          estado: "cerrada",
+          diferencia: parseFloat(diferencia)
+        });
+
+        // ✅ Enviar correo de cierre
+        const functions = getFunctions();
+        const enviarCorreo = httpsCallable(functions, "enviarCierreCaja");
+
+        await enviarCorreo({
+          usuario,
+          montoInicial: montoInicial.toFixed(2),
+          montoFinal: montoFinal.toFixed(2),
+          totalVentas: totalVentas.toFixed(2),
+          diferencia: diferencia.toFixed(2),
+          resumenHTML: detalleVentas.innerHTML
+        });
+
+        mensaje.textContent = "✅ Caja cerrada correctamente y correo enviado.";
+        mensaje.className = "mensaje ok";
+
+        setTimeout(() => {
+          localStorage.clear();
+          signOut(auth).then(() => window.location.href = "index.html");
+        }, 2500);
+      } catch (error) {
+        console.error(error);
+        mensaje.textContent = "❌ Error al cerrar caja o enviar correo.";
+        mensaje.className = "mensaje error";
+      }
+    });
+
+    cargarResumenCaja();
+  </script>
+
+</body>
+</html>

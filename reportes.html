@@ -12,6 +12,10 @@
   <div class="header">
     <div class="header-column">
       <span id="usuario-logueado">Bienvenido</span>
+      <br>
+      <span id="rol-logueado">Rol: </span>
+      <br>
+      <span id="fecha-hoy"></span>
     </div>
     <div class="header-column center-column">
       <img src="logo3-removebg-preview.png" alt="Logo del ERP" class="logo" />
@@ -114,6 +118,9 @@
     const rol = (data.rol || "Desconocido").trim();
 
     spanUsuario.textContent = `Bienvenido, ${nombre}`;
+    document.getElementById("rol-logueado").textContent = `Rol: ${rol}`;
+    const hoy = new Date();
+document.getElementById("fecha-hoy").textContent = hoy.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
 
     const enlaces = document.querySelectorAll(".sidebar a");
     enlaces.forEach(link => {

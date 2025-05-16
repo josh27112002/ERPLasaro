@@ -11,6 +11,10 @@
   <div class="header">
     <div class="header-column">
       <span id="usuario-logueado">Bienvenido</span>
+      <br>
+      <span id="rol-logueado">Rol: </span>
+      <br>
+      <span id="fecha-hoy"></span>
     </div>
     <div class="header-column center-column">
       <img src="logo3-removebg-preview.png" alt="Logo del ERP" class="logo" />
@@ -113,6 +117,9 @@
       if (!snap.exists()) return window.location.href = "index.html";
       const data = snap.data();
       usuarioLogueadoSpan.textContent = `Bienvenido, ${data.nombre || "Usuario"}`;
+      document.getElementById("rol-logueado").textContent = `Rol: ${data.rol}`;
+      const hoy = new Date();
+document.getElementById("fecha-hoy").textContent = hoy.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
       mostrarOpcionesPermitidas(data.rol || "");
       if ((data.rol || "").trim() !== "Administrador") return window.location.href = "dashboard.html";
       obtenerUsuarios();

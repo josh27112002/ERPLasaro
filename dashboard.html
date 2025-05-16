@@ -7,11 +7,17 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script type="module" src="firebase.js"></script>
   <link rel="stylesheet" href="/static/lateral.css">
-
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 <body>
   <div class="header">
-    <div class="header-column"><span id="usuario-logueado">Bienvenido</span></div>
+    <div class="header-column">
+      <span id="usuario-logueado">Bienvenido</span>
+      <br>
+      <span id="rol-logueado">Rol: </span>
+      <br>
+      <span id="fecha-hoy"></span>
+    </div>
     <div class="header-column center-column">
       <img src="logo3-removebg-preview.png" alt="Logo del ERP" class="logo" />
     </div>
@@ -34,18 +40,91 @@
     </div>
 
     <div class="main">
-      <h1>Hola mundo  principal</h1>
+      <h1>Pagina principal</h1>
+      <div class="dashboard-grid">
+        <!-- Widget 1: Ventas mensuales Chart -->
+        <div class="card widget">
+          <div class="widget-header">
+            <h2><i class="fas fa-chart-bar"></i> Ventas Mensuales</h2>
+            <button class="toggle-btn" onclick="toggleWidget(this)">−</button>
+          </div>
+          <div class="widget-content">
+            <div class="chart-container">
+              <canvas id="ventasChart"></canvas>
+            </div>
+          </div>
+        </div>
 
-      <div class="card">
-        <h2>Gráfica de Ventas</h2>
-        <div class="chart-container">
-          <canvas id="ventasChart"></canvas>
+        <!-- Widget 2: Tendencia de ventas Chart -->
+        <div class="card widget">
+          <div class="widget-header">
+            <h2><i class="fas fa-chart-line"></i> Tendencia de Ventas</h2>
+            <button class="toggle-btn" onclick="toggleWidget(this)">−</button>
+          </div>
+          <div class="widget-content">
+            <div class="chart-container">
+              <canvas id="tendenciaChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Widget 3: Categoria de productos Pie Chart -->
+        <div class="card widget">
+          <div class="widget-header">
+            <h2><i class="fas fa-chart-pie"></i> Categorías de Productos</h2>
+            <button class="toggle-btn" onclick="toggleWidget(this)">−</button>
+          </div>
+          <div class="widget-content">
+            <div class="chart-container">
+              <canvas id="categoriasChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Widget 4: Sumatoria total de productos en inventario -->
+        <div class="card widget widget-list">
+          <div class="widget-header">
+            <h2><i class="fas fa-boxes"></i> Total de Productos en Inventario</h2>
+            <button class="toggle-btn" onclick="toggleWidget(this)">−</button>
+          </div>
+          <div class="widget-content">
+            <p class="total-inventario">Total de productos: <span id="total-inventario">0</span></p>
+          </div>
+        </div>
+
+        <!-- Widget 5: Distribución de roles Doughnut Chart -->
+        <div class="card widget">
+          <div class="widget-header">
+            <h2><i class="fas fa-user-tag"></i> Distribución de Roles</h2>
+            <button class="toggle-btn" onclick="toggleWidget(this)">−</button>
+          </div>
+          <div class="widget-content">
+            <div class="chart-container">
+              <canvas id="rolesChart"></canvas>
+            </div>
+          </div>
         </div>
       </div>
 
+      <!-- Tabla de Productos con Pocas Existencias -->
+      <div class="card">
+        <h2>Productos con Pocas Existencias</h2>
+        <table id="low-stock-table">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>Existencias</th>
+              <th>Alerta</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <!-- Tabla de Trabajadores -->
       <div class="card">
         <h2>Trabajadores</h2>
-        <table>
+        <table id="users-table">
           <thead>
             <tr>
               <th>Nombre</th>
@@ -56,30 +135,28 @@
           <tbody></tbody>
         </table>
       </div>
-
-      <div class="card products-list">
-        <h2>Productos con Pocas Existencias</h2>
-        <ul></ul>
-      </div>
     </div>
   </div>
 
   <script type="module">
     import { db } from './firebase.js';
     import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
-  
+
     // Verificar sesión
     const usuario = localStorage.getItem("usuario");
     const rol = (localStorage.getItem("rol") || "").trim();
-  
+
     if (!usuario || !rol) {
       window.location.href = "index.html";
     }
-  
+
     // Mostrar nombre
     const nombreCapitalizado = usuario.charAt(0).toUpperCase() + usuario.slice(1);
     document.getElementById("usuario-logueado").textContent = `Bienvenido, ${nombreCapitalizado}`;
-  
+    document.getElementById("rol-logueado").textContent = `Rol: ${rol}`;
+    const hoy = new Date();
+    document.getElementById("fecha-hoy").textContent = hoy.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+
     // Función para mostrar menú por rol
     function mostrarOpcionesPermitidas(rolUsuario) {
       const links = document.querySelectorAll('.sidebar a');
@@ -90,21 +167,34 @@
         }
       });
     }
-  
+
     // Aplicar restricción de menú
     mostrarOpcionesPermitidas(rol);
-  
+
     // Cerrar sesión
     window.cerrarSesion = function () {
       localStorage.clear();
       window.location.href = "index.html";
     };
-  
+
+    // Toggle widget visibility
+    window.toggleWidget = function (button) {
+      const widget = button.closest('.widget');
+      const content = widget.querySelector('.widget-content');
+      if (content.style.display === 'none') {
+        content.style.display = 'block';
+        button.textContent = '−';
+      } else {
+        content.style.display = 'none';
+        button.textContent = '+';
+      }
+    };
+
     // Cargar gráfica de ventas
     const ventasCollection = collection(db, "ventas");
     getDocs(ventasCollection).then((querySnapshot) => {
       const ventasPorMes = {};
-  
+
       querySnapshot.forEach((doc) => {
         const data = doc.data();
         const fecha = data.fecha.toDate();
@@ -112,19 +202,19 @@
         const anio = fecha.getFullYear();
         const clave = `${anio}-${mes + 1}`.padStart(7, '0');
         const totalVenta = parseFloat(data.total) || 0;
-  
+
         if (!ventasPorMes[clave]) ventasPorMes[clave] = 0;
         ventasPorMes[clave] += totalVenta;
       });
-  
+
       const clavesOrdenadas = Object.keys(ventasPorMes).sort();
       const etiquetas = clavesOrdenadas.map(clave => {
         const [anio, mes] = clave.split('-');
         return new Date(anio, mes - 1).toLocaleString('es-ES', { month: 'short', year: 'numeric' });
       });
-  
+
       const totales = clavesOrdenadas.map(clave => ventasPorMes[clave]);
-  
+
       new Chart(document.getElementById('ventasChart'), {
         type: 'bar',
         data: {
@@ -154,11 +244,84 @@
         }
       });
     });
-  
-    // Cargar trabajadores
+
+    // Cargar categorías de productos y productos con poca existencia
+    getDocs(collection(db, "inventario")).then((querySnapshot) => {
+      const categorias = {};
+      querySnapshot.forEach((doc) => {
+        const p = doc.data();
+        const categoria = p.categoria || 'Sin categoría';
+        categorias[categoria] = (categorias[categoria] || 0) + 1;
+      });
+
+      const etiquetas = Object.keys(categorias);
+      const valores = Object.values(categorias);
+
+      new Chart(document.getElementById('categoriasChart'), {
+        type: 'pie',
+        data: {
+          labels: etiquetas,
+          datasets: [{
+            data: valores,
+            backgroundColor: ['#3498db', '#e74c3c', '#2ecc71', '#f1c40f', '#9b59b6'],
+            borderColor: '#ffffff',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: 'right' }
+          }
+        }
+      });
+
+      // Calcular la sumatoria total de la cantidad de productos
+    let totalCantidad = 0;
+    querySnapshot.forEach((doc) => {
+      const p = doc.data();
+      const cantidad = typeof p.cantidad === "number" ? p.cantidad : parseInt(p.cantidad) || 0;
+      totalCantidad += cantidad;
+    });
+    // Actualizar el valor en el HTML
+    document.getElementById('total-inventario').textContent = totalCantidad.toLocaleString();
+
+      // Productos con poca existencia
+      const tbodyLowStock = document.querySelector('#low-stock-table tbody');
+      tbodyLowStock.innerHTML = '';
+
+      querySnapshot.forEach((doc) => {
+        const p = doc.data();
+        const cantidad = typeof p.cantidad === "number" ? p.cantidad : parseInt(p.cantidad) || 0;
+        const alerta = typeof p.alerta === "number" ? p.alerta : parseInt(p.alerta) || 0;
+        if (cantidad <= alerta) {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${p.nombre || 'Sin nombre'}</td>
+            <td style="color:red;">${cantidad}</td>
+            <td>${alerta}</td>
+          `;
+          tbodyLowStock.appendChild(tr);
+        }
+      });
+
+      if (tbodyLowStock.children.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td colspan="3" style="text-align:center;">No hay productos con pocas existencias.</td>`;
+        tbodyLowStock.appendChild(tr);
+      }
+    }).catch((error) => {
+      console.error("Error al cargar inventario: ", error);
+      const tbodyLowStock = document.querySelector('#low-stock-table tbody');
+      tbodyLowStock.innerHTML = `<tr><td colspan="3" style="text-align:center;">Error al cargar productos.</td></tr>`;
+    });
+
+    // Cargar trabajadores y roles
     getDocs(collection(db, "usuarios")).then((querySnapshot) => {
-      const tbody = document.querySelector('table tbody');
-      tbody.innerHTML = '';
+      const tbodyUsers = document.querySelector('#users-table tbody');
+      tbodyUsers.innerHTML = '';
+      const roles = {};
+
       querySnapshot.forEach((doc) => {
         const t = doc.data();
         const tr = document.createElement('tr');
@@ -167,35 +330,54 @@
           <td>${t.correo || 'No disponible'}</td>
           <td>${t.rol || 'No disponible'}</td>
         `;
-        tbody.appendChild(tr);
+        tbodyUsers.appendChild(tr);
+
+        const rol = t.rol || 'Sin rol';
+        roles[rol] = (roles[rol] || 0) + 1;
       });
-    });
-  
-    // Productos con poca existencia
-    getDocs(collection(db, "inventario")).then((querySnapshot) => {
-      const lista = document.querySelector('.products-list ul');
-      lista.innerHTML = '';
-      querySnapshot.forEach((doc) => {
-        const p = doc.data();
-        if (p.cantidad <= p.cantidadAlerta) {
-          const li = document.createElement('li');
-          li.textContent = `${p.nombre} - Existencias: ${p.cantidad}`;
-          lista.appendChild(li);
+
+      if (tbodyUsers.children.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td colspan="3" style="text-align:center;">No hay usuarios registrados.</td>`;
+        tbodyUsers.appendChild(tr);
+      }
+
+      const etiquetasRoles = Object.keys(roles);
+      const valoresRoles = Object.values(roles);
+
+      new Chart(document.getElementById('rolesChart'), {
+        type: 'doughnut',
+        data: {
+          labels: etiquetasRoles,
+          datasets: [{
+            data: valoresRoles,
+            backgroundColor: ['#3498db', '#e74c3c', '#2ecc71', '#f1c40f'],
+            borderColor: '#ffffff',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: 'right' }
+          }
         }
       });
+    }).catch((error) => {
+      console.error("Error al cargar usuarios: ", error);
+      const tbodyUsers = document.querySelector('#users-table tbody');
+      tbodyUsers.innerHTML = `<tr><td colspan="3" style="text-align:center;">Error al cargar usuarios.</td></tr>`;
     });
 
     // Marcar la opción activa en el sidebar
     const links = document.querySelectorAll('.sidebar a');
-    const currentPage = window.location.pathname.split("/").pop(); // por ejemplo: "usuarios.html"
+    const currentPage = window.location.pathname.split("/").pop();
 
     links.forEach(link => {
-    if (link.getAttribute("href") === currentPage) {
-      link.classList.add("active");
+      if (link.getAttribute("href") === currentPage) {
+        link.classList.add("active");
       }
     });
-
   </script>
-  
 </body>
 </html>

@@ -8,8 +8,12 @@
 </head>
 <body>
   <div class="header">
-    <div class="header-column">
+        <div class="header-column">
       <span id="usuario-logueado">Bienvenido</span>
+      <br>
+      <span id="rol-logueado">Rol: </span>
+      <br>
+      <span id="fecha-hoy"></span>
     </div>
     <div class="header-column center-column">
       <img src="logo3-removebg-preview.png" alt="Logo del ERP" class="logo" />
@@ -132,6 +136,9 @@
       const rol = data.rol || "";
 
       document.getElementById("usuario-logueado").textContent = `Bienvenido, ${nombre}`;
+      document.getElementById("rol-logueado").textContent = `Rol: ${rol}`;
+      const hoy = new Date();
+document.getElementById("fecha-hoy").textContent = hoy.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
       mostrarOpcionesPermitidas(rol);
 
       if (!["Administrador", "Vendedor", "Bodega"].includes(rol)) {

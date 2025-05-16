@@ -169,6 +169,7 @@
   table {
     width: 100%;
     margin-top: 20px;
+    text-align: left;
     border-collapse: collapse;
   }
   table th, table td {
@@ -309,3 +310,82 @@
   display: flex;
   justify-content: space-between;
 }
+
+/* Dashboard Grid */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+/* Widget Styling */
+.card.widget {
+  background-color: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: transform 0.2s;
+}
+
+.card.widget:hover {
+  transform: translateY(-5px);
+}
+
+.widget-hover {
+  cursor: pointer;
+}
+
+.widget-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #3498db;
+  color: #ffffff;
+  padding: 15px;
+}
+
+.widget-header h2 {
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.toggle-btn {
+  background: none;
+  border: none;
+  color: #ffffff;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.widget-content {
+  padding: 20px;
+}
+
+.chart-container {
+  position: relative;
+  height: 200px;
+}
+
+/* Products List */
+.products-list {
+  list-style: none;
+}
+
+.products-list li {
+  padding: 10px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.total-inventario {
+  font-size: 1.5em;
+  font-weight: bold;
+  text-align: center;
+  margin: 20px 0;
+}
+
+.total-inventario span {
+  color: #3498db; /* Color azul para destacar el número */
+}
+

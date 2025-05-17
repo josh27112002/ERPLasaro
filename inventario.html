@@ -40,14 +40,15 @@
     <div class="main">
       <h1>Inventario</h1>
       <div class="card">
-        <input type="text" id="nombre" placeholder="Nombre del producto">
-        <input type="number" id="cantidad" placeholder="Cantidad existente">
-        <input type="number" id="cantidadAlerta" placeholder="Cantidad de alerta">
-        <input type="number" id="precio" placeholder="Precio" step="0.01">
-        <input type="text" id="imagen" placeholder="URL de imagen (opcional)">
-        <button id="btnGuardar">Guardar producto</button>
-        <button onclick="imprimirInventario()">Imprimir</button>
-        <p id="mensaje"></p>
+        <input type="text" id="nombre" placeholder="Nombre del producto" required>
+        <input type="number" id="cantidad" placeholder="Cantidad existente" min="0" required>
+        <input type="number" id="cantidadAlerta" placeholder="Cantidad de alerta" min="5" required>
+        <input type="number" id="precio" placeholder="Precio" step="0.01" min="0" required>
+        <input type="url" id="imagen" placeholder="URL de imagen (opcional)">
+        <div>
+          <button id="btnGuardar">Guardar producto</button>
+          <button class="secondary" onclick="imprimirInventario()">Imprimir</button>
+        </div>
       </div>
 
       <h2>Productos en Inventario</h2>
@@ -56,8 +57,8 @@
         <thead>
           <tr>
             <th>Nombre</th>
-            <th>Cantidad en existencia</th>
-            <th>Cantidad de alerta</th>
+            <th>Cantidad</th>
+            <th>Alerta</th>
             <th>Precio</th>
             <th>Imagen</th>
             <th>Acciones</th>
@@ -86,9 +87,12 @@
       const ref = doc(db, "usuarios", uid);
       const snap = await getDoc(ref);
 
-      if (!snap.exists()) {
-        alert("⚠️ Tu perfil no está registrado en el sistema.");
-        window.location.href = "index.html";
+       if (!snap.exists()) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Perfil no registrado',
+          text: 'Tu perfil no está registrado en el sistema.'
+        }).then(() => window.location.href = "index.html");
         return;
       }
 
@@ -113,8 +117,11 @@ document.getElementById("fecha-hoy").textContent = hoy.toLocaleDateString('es-ES
       // Bloquear acceso si no tiene rol adecuado
       const permitidosEnInventario = ["Administrador", "Bodega"];
       if (!permitidosEnInventario.includes(rol)) {
-        alert("⚠️ No tienes permisos para acceder a esta página.");
-        window.location.href = "dashboard.html";
+        Swal.fire({
+          icon: 'error',
+          title: 'Acceso denegado',
+          text: 'No tienes permisos para acceder a esta página.'
+        }).then(() => window.location.href = "dashboard.html");
         return;
       }
 
@@ -147,9 +154,9 @@ document.getElementById("fecha-hoy").textContent = hoy.toLocaleDateString('es-ES
         row.innerHTML = `
           <td>${producto.nombre}</td>
           <td>${producto.cantidad}</td>
-          <td>${producto.alerta || ''}</td>
-          <td>${producto.precio}</td>
-          <td><img src="${producto.imagen || ''}" width="50"></td>
+          <td>${producto.alerta || '-'}</td>
+          <td>${parseFloat(producto.precio).toLocaleString('es-GT', { style: 'currency', currency: 'GTQ' })}</td>
+          <td>${producto.imagen ? `<img src="${producto.imagen}" alt="${producto.nombre}" width="50">` : '-'}</td>
           <td>
             <span class="icon" onclick="editarProducto('${producto.id}')">✏️</span>
             <span class="icon" onclick="eliminarProducto('${producto.id}')">🗑️</span>
@@ -162,82 +169,69 @@ document.getElementById("fecha-hoy").textContent = hoy.toLocaleDateString('es-ES
       const productoSnap = await getDoc(productoRef);
       if (productoSnap.exists()) {
         const producto = productoSnap.data();
+        document.getElementById('nombre').focus();
         document.getElementById("nombre").value = producto.nombre;
         document.getElementById("cantidad").value = producto.cantidad;
-        document.getElementById("alerta").value = producto.alerta || '';
+        document.getElementById("cantidadAlerta").value = producto.alerta || '';
         document.getElementById("precio").value = producto.precio;
         document.getElementById("imagen").value = producto.imagen || '';
         idEditando = id;
+        document.getElementById("btnGuardar").textContent = "Actualizar producto";
       }
     };
 
-    window.eliminarProducto = async function(uid) {
-  Swal.fire({
-    title: '¿Estás seguro?',
-    text: "Esta acción eliminará al producto permanentemente.",
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonColor: '#3085d6',
-    cancelButtonColor: '#d33',
-    confirmButtonText: 'Sí, eliminar',
-    cancelButtonText: 'Cancelar'
-  }).then(async (result) => {
-    if (result.isConfirmed) {
-      try {
-        await deleteDoc(doc(db, "inventario", uid));
-        obtenerUsuarios();
-        Swal.fire(
-          '¡Eliminado!',
-          'El producto ha sido eliminado correctamente.',
-          'success'
-        );
-      } catch (error) {
-        console.error("Error al eliminar el producto:", error);
-        Swal.fire(
-          '¡Error!',
-          'Hubo un problema al intentar eliminar el producto.',
-          'error'
-        );
-      }
-    }
-  });
-}
-
-    window.filtrarProductos = async function() {
-      const texto = document.getElementById("busquedaProducto").value.trim().toLowerCase();
-      const snapshot = await getDocs(collection(db, "inventario"));
-      tablaBody.innerHTML = "";
-      snapshot.docs.forEach(doc => {
-        const producto = doc.data();
-        if (producto.nombre.toLowerCase().includes(texto)) {
-          const row = tablaBody.insertRow();
-          row.innerHTML = `
-            <td>${producto.nombre}</td>
-            <td>${producto.cantidad}</td>
-            <td>${producto.alerta || ''}</td>
-            <td>${producto.precio}</td>
-            <td><img src="${producto.imagen || ''}" width="50"></td>
-            <td>
-              <span class="icon" onclick="editarProducto('${doc.id}')">✏️</span>
-              <span class="icon" onclick="eliminarProducto('${doc.id}')">🗑️</span>
-            </td>`;
+    window.eliminarProducto = async function(id) {
+      Swal.fire({
+        title: '¿Estás seguro?',
+        text: "Esta acción eliminará al producto permanentemente.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          try {
+            await deleteDoc(doc(db, "inventario", id));
+            await obtenerProductos();
+            Swal.fire(
+              '¡Eliminado!',
+              'El producto ha sido eliminado correctamente.',
+              'success'
+            );
+          } catch (error) {
+            console.error("Error al eliminar el producto:", error.message, error.stack);
+            Swal.fire(
+              '¡Error!',
+              'Hubo un problema al intentar eliminar el producto: ' + error.message,
+              'error'
+            );
+          }
         }
       });
     };
+   window.filtrarProductos = function() {
+      const texto = document.getElementById("busquedaProducto").value.trim().toLowerCase();
+      const filtrados = productos.filter(producto => producto.nombre.toLowerCase().includes(texto));
+      mostrarProductos(filtrados);
+    };
+
+    document.getElementById("busquedaProducto").addEventListener("input", filtrarProductos);
 
     document.getElementById("btnGuardar").addEventListener("click", async function () {
-      const nombre = document.getElementById("nombre").value;
+      const nombre = document.getElementById("nombre").value.trim();
       const cantidad = parseInt(document.getElementById("cantidad").value);
       const alerta = parseInt(document.getElementById("cantidadAlerta").value);
       const precio = parseFloat(document.getElementById("precio").value);
-      const imagen = document.getElementById("imagen").value;
+      const imagen = document.getElementById("imagen").value.trim();
 
 // Revisa si algun campo está vacío
       if (!nombre || cantidad === "" || alerta === "" || precio === "") {
         Swal.fire({
           icon: 'error',
           title: 'Campos incompletos',
-          text: 'Faltan campos por llenar. Por favor, completa todos los campos obligatorios (nombre, cantidad, cantidad de alerta, precio).'
+          text: 'Por favor, completa todos los campos obligatorios.'
         });
         return;
       }
@@ -253,30 +247,39 @@ document.getElementById("fecha-hoy").textContent = hoy.toLocaleDateString('es-ES
       }
 
       const producto = { nombre, cantidad, alerta, precio, imagen };
-      if (idEditando) {
-        await updateDoc(doc(db, "inventario", idEditando), producto);
-      } else {
-        await addDoc(collection(db, "inventario"), producto);
-      }
+      try {
+        if (idEditando) {
+          await updateDoc(doc(db, "inventario", idEditando), producto);
+          Swal.fire('¡Actualizado!', 'El producto ha sido actualizado.', 'success');
+        } else {
+          await addDoc(collection(db, "inventario"), producto);
+          Swal.fire('¡Guardado!', 'El producto ha sido guardado.', 'success');
+        }
 
-      obtenerProductos();
-      document.getElementById("nombre").value = "";
-      document.getElementById("cantidad").value = "";
-      document.getElementById("alerta").value = "";
-      document.getElementById("precio").value = "";
-      document.getElementById("imagen").value = "";
-      idEditando = null;
+        obtenerProductos();
+        document.getElementById("nombre").value = "";
+        document.getElementById("cantidad").value = "";
+        document.getElementById("cantidadAlerta").value = "";
+        document.getElementById("precio").value = "";
+        document.getElementById("imagen").value = "";
+        document.getElementById("btnGuardar").textContent = "Guardar producto";
+        idEditando = null;
+      } catch (error) {
+        console.error("Error al guardar el producto:", error);
+        Swal.fire('¡Error!', 'No se pudo guardar el producto.', 'error');
+      }
     });
 
     // Marcar la opción activa en el sidebar
     const links = document.querySelectorAll('.sidebar a');
-    const currentPage = window.location.pathname.split("/").pop(); // por ejemplo: "usuarios.html"
-
+    const currentPage = window.location.pathname.split("/").pop();
     links.forEach(link => {
-    if (link.getAttribute("href") === currentPage) {
-      link.classList.add("active");
+      if (link.getAttribute("href") === currentPage) {
+        link.classList.add("active");
       }
     });
+
+    
   </script>
 </body>
 </html>

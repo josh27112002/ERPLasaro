@@ -122,7 +122,7 @@
   /* ===== FORM ELEMENTS =====
      Aplica a formularios de todas las secciones, como inventario, usuarios, ventas, etc. */
   input, select {
-    width: 100%;
+    width: 98%;
     padding: 12px;
     margin-bottom: 12px;
     border: 1px solid #ccc;

@@ -5,12 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Cerrar Caja</title>
   <link rel="stylesheet" href="/static/lateral.css" />
-  <style>
-
-  </style>
 </head>
 <body>
-
 
   <div class="header">
     <div class="header-column"><span class="left-text" id="usuario-logueado">Bienvenido</span></div>
@@ -63,8 +59,7 @@
     import {
       collection, query, where, getDocs, updateDoc, doc, Timestamp
     } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
-    import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
-    import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-functions.js";
+    import { getAuth } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
 
     const uid = localStorage.getItem("uid");
     const usuario = localStorage.getItem("usuario");
@@ -184,29 +179,15 @@
           diferencia: parseFloat(diferencia)
         });
 
-        // ✅ Enviar correo de cierre
-        const functions = getFunctions();
-        const enviarCorreo = httpsCallable(functions, "enviarCierreCaja");
-
-        await enviarCorreo({
-          usuario,
-          montoInicial: montoInicial.toFixed(2),
-          montoFinal: montoFinal.toFixed(2),
-          totalVentas: totalVentas.toFixed(2),
-          diferencia: diferencia.toFixed(2),
-          resumenHTML: detalleVentas.innerHTML
-        });
-
-        mensaje.textContent = "✅ Caja cerrada correctamente y correo enviado.";
+        mensaje.textContent = "✅ Caja cerrada correctamente.";
         mensaje.className = "mensaje ok";
 
         setTimeout(() => {
-          localStorage.clear();
-          signOut(auth).then(() => window.location.href = "index.html");
+          window.location.href = "dashboard.html";
         }, 2500);
       } catch (error) {
         console.error(error);
-        mensaje.textContent = "❌ Error al cerrar caja o enviar correo.";
+        mensaje.textContent = "❌ Error al cerrar caja.";
         mensaje.className = "mensaje error";
       }
     });

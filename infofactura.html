@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Configuración Factura - ERP</title>
+  <link rel="stylesheet" href="/static/lateral.css">
+  <style>
+    .card label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    .card input, .card textarea {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+
+    .card button {
+      margin-top: 20px;
+      padding: 10px;
+      width: 100%;
+      background-color: #1a73e8;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .card button:hover {
+      background-color: #155ac1;
+    }
+
+    .mensaje {
+      margin-top: 15px;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .preview-logo {
+      margin-top: 10px;
+      max-width: 150px;
+      max-height: 150px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="header-column">
+      <span id="usuario-logueado">Bienvenido</span><br>
+      <span id="rol-logueado">Rol: </span><br>
+      <span id="fecha-hoy"></span>
+    </div>
+    <div class="header-column center-column">
+      <img src="logo3-removebg-preview.png" alt="Logo del ERP" class="logo" />
+    </div>
+    <div class="header-column right-column">
+      <a href="#" class="logout" onclick="cerrarSesion()">Cerrar sesión</a>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="sidebar">
+      <h2>Mi ERP</h2>
+      <ul>
+        <li><a href="dashboard.html">Inicio</a></li>
+        <li><a href="ventas.html">Ventas</a></li>
+        <li><a href="compras.html">Compras</a></li>
+        <li><a href="inventario.html">Inventario</a></li>
+        <li><a href="reportes.html">Reportes</a></li>
+        <li><a href="usuarios.html">Usuarios</a></li>
+        <li><a href="factura_config.html" class="active">Config. Factura</a></li>
+      </ul>
+    </div>
+
+    <div class="main">
+      <h1>Configuración de Factura</h1>
+      <div class="card">
+        <form id="configForm">
+          <label for="nombre">Nombre de la empresa:</label>
+          <input type="text" id="nombre" required />
+
+          <label for="telefono">Teléfono:</label>
+          <input type="text" id="telefono" required />
+
+          <label for="direccion">Dirección:</label>
+          <textarea id="direccion" rows="2" required></textarea>
+
+          <label for="logo">Subir logo de la empresa (opcional):</label>
+          <input type="file" id="logo" accept="image/*" />
+          <img id="previewLogo" class="preview-logo" style="display:none;" />
+
+          <button type="submit">Guardar configuración</button>
+          <p class="mensaje" id="mensaje"></p>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { db, storage } from './firebase.js';
+    import {
+      doc, setDoc, getDoc
+    } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+    import {
+      ref, uploadBytes, getDownloadURL
+    } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-storage.js";
+
+    const configRef = doc(db, "configuracion_factura", "empresa");
+
+    const usuario = localStorage.getItem("usuario");
+    const uid = localStorage.getItem("uid");
+    const rol = (localStorage.getItem("rol") || "").trim();
+
+    if (!usuario || !uid) {
+      window.location.href = "index.html";
+    } else {
+      const nombreCapitalizado = usuario.charAt(0).toUpperCase() + usuario.slice(1);
+      document.getElementById("usuario-logueado").textContent = `Bienvenido, ${nombreCapitalizado}`;
+      document.getElementById("rol-logueado").textContent = `Rol: ${rol}`;
+      const hoy = new Date();
+      document.getElementById("fecha-hoy").textContent = hoy.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+    }
+
+    window.cerrarSesion = function () {
+      localStorage.clear();
+      window.location.href = "index.html";
+    };
+
+    const form = document.getElementById("configForm");
+    const mensaje = document.getElementById("mensaje");
+    const logoInput = document.getElementById("logo");
+    const previewLogo = document.getElementById("previewLogo");
+
+    let currentLogoUrl = "";
+
+    async function cargarConfiguracion() {
+      try {
+        const snap = await getDoc(configRef);
+        if (snap.exists()) {
+          const data = snap.data();
+          document.getElementById("nombre").value = data.nombre || '';
+          document.getElementById("telefono").value = data.telefono || '';
+          document.getElementById("direccion").value = data.direccion || '';
+          if (data.logo) {
+            currentLogoUrl = data.logo;
+            previewLogo.src = data.logo;
+            previewLogo.style.display = "block";
+          }
+        }
+      } catch (err) {
+        mensaje.textContent = "❌ Error al cargar configuración.";
+        console.error(err);
+      }
+    }
+
+    logoInput.addEventListener("change", () => {
+      const file = logoInput.files[0];
+      if (file) {
+        previewLogo.src = URL.createObjectURL(file);
+        previewLogo.style.display = "block";
+      }
+    });
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const nombre = document.getElementById("nombre").value.trim();
+      const telefono = document.getElementById("telefono").value.trim();
+      const direccion = document.getElementById("direccion").value.trim();
+      const file = logoInput.files[0];
+
+      if (!nombre || !telefono || !direccion) {
+        mensaje.textContent = "⚠️ Todos los campos excepto el logo son obligatorios.";
+        return;
+      }
+
+      try {
+        let logoUrl = currentLogoUrl;
+
+        if (file) {
+          const filePath = `logos_empresa/logo_${Date.now()}.png`;
+          const fileRef = ref(storage, filePath);
+          await uploadBytes(fileRef, file);
+          logoUrl = await getDownloadURL(fileRef);
+        }
+
+        await setDoc(configRef, {
+          nombre,
+          telefono,
+          direccion,
+          logo: logoUrl
+        });
+
+        mensaje.textContent = "✅ Configuración guardada correctamente.";
+        mensaje.style.color = "green";
+      } catch (err) {
+        mensaje.textContent = "❌ Error al guardar configuración.";
+        mensaje.style.color = "red";
+        console.error(err);
+      }
+    });
+
+    cargarConfiguracion();
+
+    // Marcar la opción activa en el menú
+    const links = document.querySelectorAll('.sidebar a');
+    const currentPage = window.location.pathname.split("/").pop();
+    links.forEach(link => {
+      if (link.getAttribute("href") === currentPage) {
+        link.classList.add("active");
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,5 +1,8 @@
 {
   "projects": {
-    "default": "erpj-3f6b7"
-  }
+    "default": "erpj-3f6b7",
+    "lasaro": "erpy-11103"
+  },
+  "targets": {},
+  "etags": {}
 }

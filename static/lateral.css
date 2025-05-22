@@ -474,3 +474,23 @@
     .modal button:hover {
       background-color: #0056b3;
     }
+
+     .autocomplete-suggestions {
+      border: 1px solid #ccc;
+      max-height: 150px;
+      overflow-y: auto;
+      position: absolute;
+      background-color: white;
+      z-index: 1000;
+      width: calc(100% - 20px);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .autocomplete-suggestions div {
+      padding: 8px;
+      cursor: pointer;
+    }
+
+    .autocomplete-suggestions div:hover {
+      background-color: #f0f0f0;
+    }

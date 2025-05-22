@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -7,91 +6,7 @@
   <title>Registrar Compras</title>
   <link rel="stylesheet" href="/static/lateral.css" />
   <style>
-    .autocomplete-suggestions {
-      display: none;
-      position: absolute;
-      background: white;
-      border: 1px solid #ccc;
-      z-index: 1000;
-      max-height: 200px;
-      overflow-y: auto;
-      width: 100%;
-    }
-    .autocomplete-suggestions div {
-      padding: 5px 10px;
-      cursor: pointer;
-    }
-    .autocomplete-suggestions div:hover {
-      background-color: #f0f0f0;
-    }
-    .mensaje.ok {
-      color: green;
-    }
-    .mensaje.error {
-      color: red;
-    }
-
-    /* Modal general */
-    .modal {
-      position: fixed;
-      z-index: 2000;
-      left: 50%;
-      top: 30%;
-      transform: translate(-50%, -30%);
-      background-color: white;
-      border: 1px solid #888;
-      border-radius: 10px;
-      width: 90%;
-      max-width: 400px;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-      padding: 20px;
-      text-align: center;
-      display: none;
-    }
-
-    .modal-content {
-      position: relative;
-    }
-
-    .close {
-      position: absolute;
-      top: 5px;
-      right: 10px;
-      cursor: pointer;
-      font-size: 20px;
-      font-weight: bold;
-    }
-
-    .modal table {
-      border-collapse: collapse;
-      width: 100%;
-      margin-top: 10px;
-    }
-
-    .modal th, .modal td {
-      border: 1px solid #ccc;
-      padding: 6px;
-      font-size: 14px;
-      text-align: left;
-    }
-
-    .modal th {
-      background-color: #f0f0f0;
-    }
-
-    .modal button {
-      margin: 10px 5px 0;
-      padding: 6px 12px;
-      border: none;
-      background-color: #007bff;
-      color: white;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-
-    .modal button:hover {
-      background-color: #0056b3;
-    }
+    /* [ESTILOS IGUAL QUE ANTES] */
   </style>
 </head>
 <body>
@@ -151,16 +66,13 @@
     </div>
   </div>
 
-  <!-- Modal de comparación -->
   <div id="modalComparacion" class="modal">
     <div class="modal-content">
       <span class="close" id="cerrarComparacion">&times;</span>
       <h3>⚠️ El producto ya existe</h3>
       <p>¿Deseas actualizar los datos o conservar los actuales?</p>
       <table>
-        <thead>
-          <tr><th>Campo</th><th>Actual</th><th>Nuevo</th></tr>
-        </thead>
+        <thead><tr><th>Campo</th><th>Actual</th><th>Nuevo</th></tr></thead>
         <tbody id="tablaComparacion"></tbody>
       </table>
       <div>
@@ -170,7 +82,6 @@
     </div>
   </div>
 
-  <!-- Modal simple informativo -->
   <div id="modalInfo" class="modal">
     <div class="modal-content">
       <span class="close" onclick="document.getElementById('modalInfo').style.display='none'">&times;</span>
@@ -194,7 +105,7 @@
     if (!uid || !usuario) {
       window.location.href = "index.html";
     } else {
-document.getElementById("usuario_logueado").textContent = `Bienvenido, ${usuario}`;
+      document.getElementById("usuario-logueado").textContent = `Bienvenido, ${usuario}`;
     }
 
     const productoInput = document.getElementById("producto");
@@ -253,7 +164,6 @@ document.getElementById("usuario_logueado").textContent = `Bienvenido, ${usuario
     ? "✔️ (automático)" 
     : `<input type="checkbox" data-campo="${campo}" checked>`}</td>
 `;
-
         tabla.appendChild(fila);
       });
 
@@ -285,6 +195,7 @@ document.getElementById("usuario_logueado").textContent = `Bienvenido, ${usuario
         id: doc.id,
         ...doc.data()
       }));
+      console.log("Inventario cargado:", inventarioCache); // Útil para depuración
       sugerenciasDiv.style.display = "none";
     }
 
@@ -406,7 +317,8 @@ document.getElementById("usuario_logueado").textContent = `Bienvenido, ${usuario
       }
     });
 
-    cargarInventario();
+    // ⚠️ Muy importante: carga el inventario al final
+    await cargarInventario();
   </script>
 
 </body>

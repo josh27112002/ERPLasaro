@@ -389,3 +389,88 @@
   color: #3498db; /* Color azul para destacar el número */
 }
 
+.autocomplete-suggestions {
+      display: none;
+      position: absolute;
+      background: white;
+      border: 1px solid #ccc;
+      z-index: 1000;
+      max-height: 200px;
+      overflow-y: auto;
+      width: 100%;
+    }
+    .autocomplete-suggestions div {
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+    .autocomplete-suggestions div:hover {
+      background-color: #f0f0f0;
+    }
+    .mensaje.ok {
+      color: green;
+    }
+    .mensaje.error {
+      color: red;
+    }
+
+    /* Modal general */
+    .modal {
+      position: fixed;
+      z-index: 2000;
+      left: 50%;
+      top: 30%;
+      transform: translate(-50%, -30%);
+      background-color: white;
+      border: 1px solid #888;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      padding: 20px;
+      text-align: center;
+      display: none;
+    }
+
+    .modal-content {
+      position: relative;
+    }
+
+    .close {
+      position: absolute;
+      top: 5px;
+      right: 10px;
+      cursor: pointer;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .modal table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    .modal th, .modal td {
+      border: 1px solid #ccc;
+      padding: 6px;
+      font-size: 14px;
+      text-align: left;
+    }
+
+    .modal th {
+      background-color: #f0f0f0;
+    }
+
+    .modal button {
+      margin: 10px 5px 0;
+      padding: 6px 12px;
+      border: none;
+      background-color: #007bff;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .modal button:hover {
+      background-color: #0056b3;
+    }

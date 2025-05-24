@@ -10,10 +10,8 @@
 <body>
   <div class="header">
     <div class="header-column">
-      <span id="usuario-logueado">Bienvenido</span>
-      <br>
-      <span id="rol-logueado">Rol: </span>
-      <br>
+      <span id="usuario-logueado">Bienvenido</span><br>
+      <span id="rol-logueado">Rol: </span><br>
       <span id="fecha-hoy"></span>
     </div>
     <div class="header-column center-column">
@@ -28,16 +26,14 @@
     <div class="sidebar">
       <h2>Mi ERP</h2>
       <ul>
-        <li><a href="dashboard.html">Inicio</a></li>
-        <li><a href="caja.html">Caja</a></li>
-        <li><a href="compras.html">Compras</a></li>
-        <li><a href="inventario.html">Inventario</a></li>
-        <li><a href="reportes.html">Reportes</a></li>
-        <li><a href="usuarios.html">Usuarios</a></li>
-        <li><a href="infofactura.html" class="active">Config. Factura</a></li>
+        <li><a href="dashboard.html" data-rol="todos">Inicio</a></li>
+        <li><a href="caja.html" data-rol="Administrador,Vendedor">Caja</a></li>
+        <li><a href="compras.html" data-rol="Administrador,Bodega">Compras</a></li>
+        <li><a href="inventario.html" data-rol="Administrador,Bodega">Inventario</a></li>
+        <li><a href="reportes.html" data-rol="Administrador,Bodega">Reportes</a></li>
+        <li><a href="usuarios.html" data-rol="Administrador" class="active">Usuarios</a></li>
+        <li><a href="infofactura.html" data-rol="Administrador">Config. Factura</a></li>
         <li><a href="personas.html" data-rol="Administrador,Vendedor,Bodega">Clientes / Proveedores</a></li>
-
-
       </ul>
     </div>
 
@@ -108,7 +104,9 @@
       const links = document.querySelectorAll('.sidebar a');
       links.forEach(link => {
         const rolesPermitidos = link.getAttribute('data-rol');
-        if (rolesPermitidos !== "todos" && !rolesPermitidos.includes(rolUsuario)) {
+        if (!rolesPermitidos || rolesPermitidos === "todos") return;
+        const listaRoles = rolesPermitidos.split(',').map(r => r.trim().toLowerCase());
+        if (!listaRoles.includes(rolUsuario.toLowerCase())) {
           link.parentElement.style.display = "none";
         }
       });
@@ -119,11 +117,12 @@
       const ref = doc(db, "usuarios", user.uid);
       const snap = await getDoc(ref);
       if (!snap.exists()) return window.location.href = "index.html";
+
       const data = snap.data();
       usuarioLogueadoSpan.textContent = `Bienvenido, ${data.nombre || "Usuario"}`;
       document.getElementById("rol-logueado").textContent = `Rol: ${data.rol}`;
-      const hoy = new Date();
-document.getElementById("fecha-hoy").textContent = hoy.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+      document.getElementById("fecha-hoy").textContent = new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+
       mostrarOpcionesPermitidas(data.rol || "");
       if ((data.rol || "").trim() !== "Administrador") return window.location.href = "dashboard.html";
       obtenerUsuarios();
@@ -154,42 +153,33 @@ document.getElementById("fecha-hoy").textContent = hoy.toLocaleDateString('es-ES
     }
 
     window.eliminarUsuario = async function(uid) {
-  Swal.fire({
-    title: '¿Estás seguro?',
-    text: "Esta acción eliminará al usuario permanentemente.",
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonColor: '#3085d6',
-    cancelButtonColor: '#d33',
-    confirmButtonText: 'Sí, eliminar',
-    cancelButtonText: 'Cancelar'
-  }).then(async (result) => {
-    if (result.isConfirmed) {
-      try {
-        await deleteDoc(doc(db, "usuarios", uid));
-        obtenerUsuarios();
-        Swal.fire(
-          '¡Eliminado!',
-          'El usuario ha sido eliminado correctamente.',
-          'success'
-        );
-      } catch (error) {
-        console.error("Error al eliminar el usuario:", error);
-        Swal.fire(
-          '¡Error!',
-          'Hubo un problema al intentar eliminar al usuario.',
-          'error'
-        );
-      }
+      Swal.fire({
+        title: '¿Estás seguro?',
+        text: "Esta acción eliminará al usuario permanentemente.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          try {
+            await deleteDoc(doc(db, "usuarios", uid));
+            obtenerUsuarios();
+            Swal.fire('¡Eliminado!', 'El usuario ha sido eliminado correctamente.', 'success');
+          } catch (error) {
+            console.error("Error al eliminar el usuario:", error);
+            Swal.fire('¡Error!', 'Hubo un problema al intentar eliminar al usuario.', 'error');
+          }
+        }
+      });
     }
-  });
-}
 
     window.editarUsuario = async function(uid) {
       const snap = await getDoc(doc(db, "usuarios", uid));
       if (!snap.exists()) return;
       const data = snap.data();
-      document.getElementById('nombre').focus();
       document.getElementById("nombre").value = data.nombre;
       document.getElementById("email").value = data.correo;
       document.getElementById("telefono").value = data.telefono;
@@ -240,13 +230,11 @@ document.getElementById("fecha-hoy").textContent = hoy.toLocaleDateString('es-ES
       }
     });
 
-    // Marcar la opción activa en el sidebar
     const links = document.querySelectorAll('.sidebar a');
-    const currentPage = window.location.pathname.split("/").pop(); // por ejemplo: "usuarios.html"
-
+    const currentPage = window.location.pathname.split("/").pop();
     links.forEach(link => {
-    if (link.getAttribute("href") === currentPage) {
-      link.classList.add("active");
+      if (link.getAttribute("href") === currentPage) {
+        link.classList.add("active");
       }
     });
   </script>

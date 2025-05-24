@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clientes y Proveedores</title>
+  <link rel="stylesheet" href="/static/lateral.css" />
+  <style>
+    .btn-toggle {
+      margin: 10px 5px;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .formulario, .tabla-container {
+      display: none;
+      margin-top: 20px;
+    }
+    .formulario.active, .tabla-container.active {
+      display: block;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+    }
+    .autocomplete-suggestions {
+      border: 1px solid #ccc;
+      max-height: 150px;
+      overflow-y: auto;
+      position: absolute;
+      background: white;
+      z-index: 1000;
+    }
+    .autocomplete-suggestions div {
+      padding: 5px;
+      cursor: pointer;
+    }
+    .autocomplete-suggestions div:hover {
+      background-color: #f0f0f0;
+    }
+  </style>
+</head>
+<body>
+<div class="header">
+  <div class="header-column"><span id="usuario-logueado">Bienvenido</span></div>
+  <div class="header-column center-column">
+    <img src="logo3-removebg-preview.png" alt="Logo del ERP" class="logo" />
+  </div>
+  <div class="header-column right-column">
+    <a href="index.html" class="logout" onclick="cerrarSesion()">Cerrar sesión</a>
+  </div>
+</div>
+
+<div class="content">
+  <div class="sidebar">
+    <h2>Mi ERP</h2>
+    <ul>
+       <li><a href="dashboard.html">Inicio</a></li>
+        <li><a href="caja.html">Caja</a></li>
+        <li><a href="compras.html">Compras</a></li>
+        <li><a href="inventario.html">Inventario</a></li>
+        <li><a href="reportes.html">Reportes</a></li>
+        <li><a href="usuarios.html">Usuarios</a></li>
+        <li><a href="infofactura.html" class="active">Config. Factura</a></li>
+        <li><a href="personas.html" data-rol="Administrador,Vendedor,Bodega">Clientes / Proveedores</a></li>
+
+
+    </ul>
+  </div>
+
+  <div class="main">
+    <h1>Clientes y Proveedores</h1>
+    <button class="btn-toggle" onclick="mostrarFormulario('cliente')">👤 Clientes</button>
+    <button class="btn-toggle" onclick="mostrarFormulario('proveedor')">🏭 Proveedores</button>
+
+    <!-- FORMULARIO CLIENTE -->
+    <div class="formulario" id="formCliente">
+      <h2>Agregar Cliente</h2>
+      <form id="clienteForm">
+        <input type="text" id="clienteNombre" placeholder="Nombre completo *" required />
+        <input type="text" id="clienteTaller" placeholder="Taller *" required />
+        <input type="text" id="clienteUbicacion" placeholder="Ubicación *" required />
+        <input type="text" id="clienteNit" placeholder="NIT" />
+        <input type="text" id="clienteTelefono" placeholder="Teléfono" />
+        <input type="text" id="clienteDpi" placeholder="DPI" />
+        <input type="text" id="clienteLugar" placeholder="Lugar" />
+        <input type="number" id="clienteCredito" placeholder="Crédito disponible" />
+        <button type="submit">Guardar Cliente</button>
+      </form>
+    </div>
+
+    <!-- FORMULARIO PROVEEDOR -->
+    <div class="formulario" id="formProveedor">
+      <h2>Agregar Proveedor</h2>
+      <form id="proveedorForm">
+        <input type="text" id="proveedorNombre" placeholder="Nombre *" required />
+        <input type="text" id="proveedorLugar" placeholder="Lugar *" required />
+        <input type="text" id="proveedorNit" placeholder="NIT" />
+        <input type="text" id="proveedorTelefono" placeholder="Teléfono" />
+        <button type="submit">Guardar Proveedor</button>
+      </form>
+    </div>
+
+    <!-- BUSCADOR Y TABLAS -->
+    <div class="tabla-container active" id="tablaClientes">
+      <h2>Lista de Clientes</h2>
+      <input type="text" id="buscadorClientes" placeholder="Buscar cliente..." autocomplete="off" />
+      <div id="sugerenciasClientes" class="autocomplete-suggestions"></div>
+      <table>
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Taller</th>
+            <th>Ubicación</th>
+            <th>Crédito</th>
+            <th>NIT</th>
+            <th>Teléfono</th>
+            <th>DPI</th>
+            <th>Lugar</th>
+          </tr>
+        </thead>
+        <tbody id="clientesBody"></tbody>
+      </table>
+    </div>
+
+    <div class="tabla-container" id="tablaProveedores">
+      <h2>Lista de Proveedores</h2>
+      <input type="text" id="buscadorProveedores" placeholder="Buscar proveedor..." autocomplete="off" />
+      <div id="sugerenciasProveedores" class="autocomplete-suggestions"></div>
+      <table>
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Lugar</th>
+            <th>NIT</th>
+            <th>Teléfono</th>
+          </tr>
+        </thead>
+        <tbody id="proveedoresBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { db } from './firebase.js';
+  import { collection, addDoc, getDocs } from 'https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js';
+
+  window.mostrarFormulario = function(tipo) {
+    document.getElementById('formCliente').classList.remove('active');
+    document.getElementById('formProveedor').classList.remove('active');
+    document.getElementById('tablaClientes').classList.remove('active');
+    document.getElementById('tablaProveedores').classList.remove('active');
+
+    if (tipo === 'cliente') {
+      document.getElementById('formCliente').classList.add('active');
+      document.getElementById('tablaClientes').classList.add('active');
+      cargarClientes();
+    } else {
+      document.getElementById('formProveedor').classList.add('active');
+      document.getElementById('tablaProveedores').classList.add('active');
+      cargarProveedores();
+    }
+  }
+
+  document.getElementById('clienteForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const data = {
+      tipo: 'cliente',
+      nombre: document.getElementById('clienteNombre').value,
+      taller: document.getElementById('clienteTaller').value,
+      ubicacion: document.getElementById('clienteUbicacion').value,
+      nit: document.getElementById('clienteNit').value,
+      telefono: document.getElementById('clienteTelefono').value,
+      dpi: document.getElementById('clienteDpi').value,
+      lugar: document.getElementById('clienteLugar').value,
+      credito: parseFloat(document.getElementById('clienteCredito').value) || 0
+    };
+    await addDoc(collection(db, 'personas'), data);
+    e.target.reset();
+    cargarClientes();
+  });
+
+  document.getElementById('proveedorForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const data = {
+      tipo: 'proveedor',
+      nombre: document.getElementById('proveedorNombre').value,
+      lugar: document.getElementById('proveedorLugar').value,
+      nit: document.getElementById('proveedorNit').value,
+      telefono: document.getElementById('proveedorTelefono').value
+    };
+    await addDoc(collection(db, 'personas'), data);
+    e.target.reset();
+    cargarProveedores();
+  });
+
+  async function cargarClientes() {
+    const snapshot = await getDocs(collection(db, 'personas'));
+    const tbody = document.getElementById('clientesBody');
+    tbody.innerHTML = '';
+    snapshot.forEach(doc => {
+      const d = doc.data();
+      if (d.tipo === 'cliente') {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${d.nombre}</td>
+          <td>${d.taller}</td>
+          <td>${d.ubicacion}</td>
+          <td>Q${d.credito?.toFixed(2) || '0.00'}</td>
+          <td>${d.nit || '-'}</td>
+          <td>${d.telefono || '-'}</td>
+          <td>${d.dpi || '-'}</td>
+          <td>${d.lugar || '-'}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+    });
+  }
+
+  async function cargarProveedores() {
+    const snapshot = await getDocs(collection(db, 'personas'));
+    const tbody = document.getElementById('proveedoresBody');
+    tbody.innerHTML = '';
+    snapshot.forEach(doc => {
+      const d = doc.data();
+      if (d.tipo === 'proveedor') {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${d.nombre}</td>
+          <td>${d.lugar}</td>
+          <td>${d.nit || '-'}</td>
+          <td>${d.telefono || '-'}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+    });
+  }
+</script>
+</body>
+</html>

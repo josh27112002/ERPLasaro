@@ -30,13 +30,15 @@
     <div class="sidebar">
       <h2>Mi ERP</h2>
       <ul>
-        <li><a href="dashboard.html" data-rol="todos">Inicio</a></li>
+        <li><a href="dashboard.html" data-rol=>Inicio</a></li>
         <li><a href="caja.html" data-rol="Administrador,Vendedor,Bodega">Ventas</a></li>
         <li><a href="compras.html" data-rol="Administrador,Bodega">Compras</a></li>
         <li><a href="inventario.html" data-rol="Administrador,Bodega">Inventario</a></li>
         <li><a href="reportes.html" data-rol="Administrador,Bodega">Reportes</a></li>
         <li><a href="usuarios.html" data-rol="Administrador">Usuarios</a></li>
-        <li><a href="infofactura.html" class="active">Config. Factura</a></li>
+        <li><a href="infofactura.html" data-rol= "Administrador,Vendedor,Bodega" >Config. Factura</a></li>
+        <li><a href="personas.html" data-rol="Administrador,Vendedor,Bodega">Clientes / Proveedores</a></li>
+
 
       </ul>
     </div>
@@ -144,7 +146,6 @@
     import { db } from './firebase.js';
     import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
-    // Verificar sesión
     const usuario = localStorage.getItem("usuario");
     const rol = (localStorage.getItem("rol") || "").trim();
 
@@ -152,47 +153,36 @@
       window.location.href = "index.html";
     }
 
-    // Mostrar nombre
     const nombreCapitalizado = usuario.charAt(0).toUpperCase() + usuario.slice(1);
     document.getElementById("usuario-logueado").textContent = `Bienvenido, ${nombreCapitalizado}`;
     document.getElementById("rol-logueado").textContent = `Rol: ${rol}`;
-    const hoy = new Date();
-    document.getElementById("fecha-hoy").textContent = hoy.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+    document.getElementById("fecha-hoy").textContent = new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
 
-    // Función para mostrar menú por rol
     function mostrarOpcionesPermitidas(rolUsuario) {
       const links = document.querySelectorAll('.sidebar a');
       links.forEach(link => {
         const rolesPermitidos = link.getAttribute('data-rol');
-        if (rolesPermitidos !== "todos" && !rolesPermitidos.includes(rolUsuario)) {
+        if (!rolesPermitidos || (rolesPermitidos !== "todos" && !rolesPermitidos.includes(rolUsuario))) {
           link.parentElement.style.display = "none";
         }
       });
     }
 
-    // Aplicar restricción de menú
     mostrarOpcionesPermitidas(rol);
 
-    // Cerrar sesión
     window.cerrarSesion = function () {
       localStorage.clear();
       window.location.href = "index.html";
     };
 
-    // Toggle widget visibility
     window.toggleWidget = function (button) {
       const widget = button.closest('.widget');
       const content = widget.querySelector('.widget-content');
-      if (content.style.display === 'none') {
-        content.style.display = 'block';
-        button.textContent = '−';
-      } else {
-        content.style.display = 'none';
-        button.textContent = '+';
-      }
+      const visible = content.style.display !== 'none';
+      content.style.display = visible ? 'none' : 'block';
+      button.textContent = visible ? '+' : '−';
     };
 
-    // Cargar gráfica de ventas
     const ventasCollection = collection(db, "ventas");
     getDocs(ventasCollection).then((querySnapshot) => {
       const ventasPorMes = {};
@@ -202,11 +192,9 @@
         const fecha = data.fecha.toDate();
         const mes = fecha.getMonth();
         const anio = fecha.getFullYear();
-        const clave = `${anio}-${mes + 1}`.padStart(7, '0');
+        const clave = `${anio}-${(mes + 1).toString().padStart(2, '0')}`;
         const totalVenta = parseFloat(data.total) || 0;
-
-        if (!ventasPorMes[clave]) ventasPorMes[clave] = 0;
-        ventasPorMes[clave] += totalVenta;
+        ventasPorMes[clave] = (ventasPorMes[clave] || 0) + totalVenta;
       });
 
       const clavesOrdenadas = Object.keys(ventasPorMes).sort();
@@ -214,7 +202,6 @@
         const [anio, mes] = clave.split('-');
         return new Date(anio, mes - 1).toLocaleString('es-ES', { month: 'short', year: 'numeric' });
       });
-
       const totales = clavesOrdenadas.map(clave => ventasPorMes[clave]);
 
       new Chart(document.getElementById('ventasChart'), {
@@ -247,24 +234,26 @@
       });
     });
 
-    // Cargar categorías de productos y productos con poca existencia
     getDocs(collection(db, "inventario")).then((querySnapshot) => {
       const categorias = {};
+      let totalCantidad = 0;
+
       querySnapshot.forEach((doc) => {
         const p = doc.data();
         const categoria = p.categoria || 'Sin categoría';
         categorias[categoria] = (categorias[categoria] || 0) + 1;
+        const cantidad = typeof p.cantidad === "number" ? p.cantidad : parseInt(p.cantidad) || 0;
+        totalCantidad += cantidad;
       });
 
-      const etiquetas = Object.keys(categorias);
-      const valores = Object.values(categorias);
+      document.getElementById('total-inventario').textContent = totalCantidad.toLocaleString();
 
       new Chart(document.getElementById('categoriasChart'), {
         type: 'pie',
         data: {
-          labels: etiquetas,
+          labels: Object.keys(categorias),
           datasets: [{
-            data: valores,
+            data: Object.values(categorias),
             backgroundColor: ['#3498db', '#e74c3c', '#2ecc71', '#f1c40f', '#9b59b6'],
             borderColor: '#ffffff',
             borderWidth: 2
@@ -278,47 +267,30 @@
         }
       });
 
-      // Calcular la sumatoria total de la cantidad de productos
-    let totalCantidad = 0;
-    querySnapshot.forEach((doc) => {
-      const p = doc.data();
-      const cantidad = typeof p.cantidad === "number" ? p.cantidad : parseInt(p.cantidad) || 0;
-      totalCantidad += cantidad;
-    });
-    // Actualizar el valor en el HTML
-    document.getElementById('total-inventario').textContent = totalCantidad.toLocaleString();
-
-      // Productos con poca existencia
       const tbodyLowStock = document.querySelector('#low-stock-table tbody');
       tbodyLowStock.innerHTML = '';
+      let tieneBajoStock = false;
 
       querySnapshot.forEach((doc) => {
         const p = doc.data();
         const cantidad = typeof p.cantidad === "number" ? p.cantidad : parseInt(p.cantidad) || 0;
         const alerta = typeof p.alerta === "number" ? p.alerta : parseInt(p.alerta) || 0;
         if (cantidad <= alerta) {
+          tieneBajoStock = true;
           const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td>${p.nombre || 'Sin nombre'}</td>
-            <td style="color:red;">${cantidad}</td>
-            <td>${alerta}</td>
-          `;
+          tr.innerHTML = `<td>${p.nombre || 'Sin nombre'}</td><td style="color:red;">${cantidad}</td><td>${alerta}</td>`;
           tbodyLowStock.appendChild(tr);
         }
       });
 
-      if (tbodyLowStock.children.length === 0) {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td colspan="3" style="text-align:center;">No hay productos con pocas existencias.</td>`;
-        tbodyLowStock.appendChild(tr);
+      if (!tieneBajoStock) {
+        tbodyLowStock.innerHTML = `<tr><td colspan="3" style="text-align:center;">No hay productos con pocas existencias.</td></tr>`;
       }
     }).catch((error) => {
       console.error("Error al cargar inventario: ", error);
-      const tbodyLowStock = document.querySelector('#low-stock-table tbody');
-      tbodyLowStock.innerHTML = `<tr><td colspan="3" style="text-align:center;">Error al cargar productos.</td></tr>`;
+      document.querySelector('#low-stock-table tbody').innerHTML = `<tr><td colspan="3" style="text-align:center;">Error al cargar productos.</td></tr>`;
     });
 
-    // Cargar trabajadores y roles
     getDocs(collection(db, "usuarios")).then((querySnapshot) => {
       const tbodyUsers = document.querySelector('#users-table tbody');
       tbodyUsers.innerHTML = '';
@@ -327,32 +299,22 @@
       querySnapshot.forEach((doc) => {
         const t = doc.data();
         const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${t.nombre || 'No disponible'}</td>
-          <td>${t.correo || 'No disponible'}</td>
-          <td>${t.rol || 'No disponible'}</td>
-        `;
+        tr.innerHTML = `<td>${t.nombre || 'No disponible'}</td><td>${t.correo || 'No disponible'}</td><td>${t.rol || 'No disponible'}</td>`;
         tbodyUsers.appendChild(tr);
-
         const rol = t.rol || 'Sin rol';
         roles[rol] = (roles[rol] || 0) + 1;
       });
 
       if (tbodyUsers.children.length === 0) {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td colspan="3" style="text-align:center;">No hay usuarios registrados.</td>`;
-        tbodyUsers.appendChild(tr);
+        tbodyUsers.innerHTML = `<tr><td colspan="3" style="text-align:center;">No hay usuarios registrados.</td></tr>`;
       }
-
-      const etiquetasRoles = Object.keys(roles);
-      const valoresRoles = Object.values(roles);
 
       new Chart(document.getElementById('rolesChart'), {
         type: 'doughnut',
         data: {
-          labels: etiquetasRoles,
+          labels: Object.keys(roles),
           datasets: [{
-            data: valoresRoles,
+            data: Object.values(roles),
             backgroundColor: ['#3498db', '#e74c3c', '#2ecc71', '#f1c40f'],
             borderColor: '#ffffff',
             borderWidth: 2
@@ -367,14 +329,11 @@
       });
     }).catch((error) => {
       console.error("Error al cargar usuarios: ", error);
-      const tbodyUsers = document.querySelector('#users-table tbody');
-      tbodyUsers.innerHTML = `<tr><td colspan="3" style="text-align:center;">Error al cargar usuarios.</td></tr>`;
+      document.querySelector('#users-table tbody').innerHTML = `<tr><td colspan="3" style="text-align:center;">Error al cargar usuarios.</td></tr>`;
     });
 
-    // Marcar la opción activa en el sidebar
     const links = document.querySelectorAll('.sidebar a');
     const currentPage = window.location.pathname.split("/").pop();
-
     links.forEach(link => {
       if (link.getAttribute("href") === currentPage) {
         link.classList.add("active");
